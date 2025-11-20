@@ -1,0 +1,745 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "Trần Anh Tùng",
+      "email": "trantung@gmail.com",
+      "password": "123456",
+      "isAdmin": true,
+      "createdAt": "2025-11-18T00:00:00.000Z"
+    },
+
+    {
+      "id": 2,
+      "name": "Lê Hoàng Long",
+      "email": "lelong@gmail.com",
+      "password": "123456",
+      "isAdmin": false,
+      "createdAt": "2025-11-18T01:00:00.000Z"
+    },
+
+    {
+      "id": 3,
+      "name": "Phạm Mạnh Hùng",
+      "email": "phamhung@gmail.com",
+      "password": "123456",
+      "isAdmin": false,
+      "createdAt": "2025-11-18T02:00:00.000Z"
+    },
+
+    {
+      "id": 4,
+      "name": "Nguyễn Hữu Tú",
+      "email": "nguyentu@gmail.com",
+      "password": "123456",
+      "isAdmin": false,
+      "createdAt": "2025-11-18T03:00:00.000Z"
+    },
+    {
+      "id": 5,
+      "name": "Hoàng Mạnh Trường",
+      "email": "hoangtruong@egmail.com",
+      "password": "123456",
+      "isAdmin": false,
+      "createdAt": "2025-11-18T04:00:00.000Z"
+    }
+  ],
+  "products": [
+    {
+      "id": 1,
+      "name": "Gaming Laptop X1",
+      "image": "https://via.placeholder.com/600x400?text=Gaming+Laptop+X1",
+      "brand": "GamerTech",
+      "category": "Gaming Laptop",
+      "description": "Laptop gaming cao cấp với RTX 4080 và màn hình 4K 144Hz",
+      "price": 52990000,
+      "countInStock": 10,
+      "rating": 4.8,
+      "numReviews": 25,
+      "specs": {
+        "CPU": "Intel Core i9-13900H",
+        "GPU": "NVIDIA RTX 4080 16GB",
+        "RAM": "32GB DDR5",
+        "Storage": "1TB NVMe SSD",
+        "Display": "17.3\" 4K 144Hz",
+        "Battery": "99Wh",
+        "Weight": "2.8kg",
+        "OS": "Windows 11 Pro" },
+      "reviews": [
+        {
+          "name": "Trần Anh Tùng",
+          "rating": 5,
+          "comment": "Chơi game cực mượt!"
+        },
+        { "name": "Lê Hoàng Long",
+          "rating": 4,
+          "comment": "Máy mạnh nhưng pin hơi yếu"
+        }
+      ],
+      "createdAt": "2025-11-18T03:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "name": "Gaming Laptop X2",
+      "image": "https://via.placeholder.com/600x400?text=Gaming+Laptop+X2",
+      "brand": "GamerTech",
+      "category": "Gaming Laptop",
+      "description": "Gaming laptop tầm trung với RTX 3060, màn 144Hz",
+      "price": 25990000,
+      "countInStock": 15,
+      "rating": 4.5,
+      "numReviews": 18,
+      "specs": {
+        "CPU": "Intel Core i7-12700H",
+        "GPU": "NVIDIA RTX 3060 6GB",
+        "RAM": "16GB DDR4",
+        "Storage": "512GB NVMe SSD",
+        "Display": "15.6\" FHD 144Hz",
+        "Battery": "75Wh",
+        "Weight": "2.5kg",
+        "OS": "Windows 11 Home"
+      },
+      "reviews": [
+        {
+          "name": "Phạm Mạnh Hùng",
+          "rating": 5,
+          "comment": "Giá hợp lý, chơi game mượt"
+        },
+        { "name": "Hoàng Mạnh Trường",
+          "rating": 4,
+          "comment": "Máy hơi nặng nhưng cấu hình tốt"
+        }
+      ],
+      "createdAt": "2025-11-18T03:30:00.000Z"
+    },
+    {
+      "id": 3,
+      "name": "Office Laptop O1",
+      "image": "https://via.placeholder.com/600x400?text=Office+Laptop+O1",
+      "brand": "OfficePro",
+      "category": "Office Laptop",
+      "description": "Laptop văn phòng đáng tin cậy, pin lâu, nhẹ",
+      "price": 12990000,
+      "countInStock": 25,
+      "rating": 4.3,
+      "numReviews": 12,
+      "specs": {
+        "CPU": "Intel Core i5-1240P",
+        "GPU": "Intel Iris Xe",
+        "RAM": "16GB DDR4",
+        "Storage": "512GB SSD",
+        "Display": "14\" FHD",
+        "Battery": "65Wh",
+        "Weight": "1.5kg",
+        "OS": "Windows 11 Home"
+      },
+      "reviews": [
+        {
+          "name": "Nguyễn Hữu Tú",
+          "rating": 4,
+          "comment": "Phù hợp cho học tập và văn phòng"
+        }
+      ],
+      "createdAt": "2025-11-18T04:00:00.000Z"
+    },
+    {
+      "id": 4,
+      "name": "Office Laptop O2",
+      "image": "https://via.placeholder.com/600x400?text=Office+Laptop+O2",
+      "brand": "OfficePro",
+      "category": "Office Laptop",
+      "description": "Laptop mỏng nhẹ, pin 12 tiếng, xử lý văn phòng nhanh",
+      "price": 14990000,
+      "countInStock": 20,
+      "rating": 4.4,
+      "numReviews": 14,
+      "specs": {
+        "CPU": "Intel Core i7-1260P",
+        "GPU": "Intel Iris Xe",
+        "RAM": "16GB DDR4",
+        "Storage": "1TB SSD",
+        "Display": "15.6\" FHD",
+        "Battery": "80Wh",
+        "Weight": "1.6kg",
+        "OS": "Windows 11 Pro"
+      },
+      "reviews": [
+        { "name": "Trần Anh Tùng",
+          "rating": 5,
+          "comment": "Máy nhẹ, pin lâu, tuyệt vời cho văn phòng"
+        }
+      ],
+      "createdAt": "2025-11-18T04:30:00.000Z"
+    },
+    {
+      "id": 5,
+      "name": "Ultrabook U1",
+      "image": "https://via.placeholder.com/600x400?text=Ultrabook+U1",
+      "brand": "SlimTech",
+      "category": "Ultrabook",
+      "description": "Laptop mỏng nhẹ cao cấp, thiết kế sang trọng",
+      "price": 19990000,
+      "countInStock": 12,
+      "rating": 4.7,
+      "numReviews": 8,
+      "specs": {
+        "CPU": "Intel Core i7-1365U",
+        "GPU": "Intel Iris Xe",
+        "RAM": "16GB LPDDR5",
+        "Storage": "1TB SSD",
+        "Display": "14\" 2.8K OLED",
+        "Battery": "70Wh",
+        "Weight": "1.2kg",
+        "OS": "Windows 11 Pro"
+      },
+      "reviews": [
+        { "name": "Lê Hoàng Long",
+          "rating": 5,
+          "comment": "Siêu nhẹ, pin tốt" }
+      ],
+      "createdAt": "2025-11-18T05:00:00.000Z"
+    },
+    {
+      "id": 6,
+      "name": "Ultrabook U2",
+      "image": "https://via.placeholder.com/600x400?text=Ultrabook+U2",
+      "brand": "SlimTech",
+      "category": "Ultrabook",
+      "description": "Laptop mỏng nhẹ, màn hình cảm ứng, cấu hình mạnh",
+      "price": 21990000,
+      "countInStock": 8,
+      "rating": 4.8,
+      "numReviews": 10,
+      "specs": {
+        "CPU": "Intel Core i7-1370P",
+        "GPU": "Intel Iris Xe",
+        "RAM": "16GB LPDDR5",
+        "Storage": "1TB SSD",
+        "Display": "15\" FHD Touch",
+        "Battery": "75Wh",
+        "Weight": "1.4kg",
+        "OS": "Windows 11 Pro"
+      },
+      "reviews": [
+        {
+          "name": "Phạm Mạnh Hùng",
+          "rating": 5,
+          "comment": "Thiết kế đẹp, màn hình cảm ứng tiện lợi"
+        }
+      ],
+      "createdAt": "2025-11-18T05:30:00.000Z"
+    },
+    {
+      "id": 7,
+      "name": "Workstation W1",
+      "image": "https://via.placeholder.com/600x400?text=Workstation+W1",
+      "brand": "CreatorPro",
+      "category": "Workstation Laptop",
+      "description": "Laptop workstation mạnh mẽ cho CAD, 3D và video editing",
+      "price": 52990000,
+      "countInStock": 5,
+      "rating": 4.9,
+      "numReviews": 7,
+      "specs": {
+        "CPU": "AMD Ryzen 9 7945HX",
+        "GPU": "NVIDIA RTX A5000 16GB",
+        "RAM": "64GB DDR5",
+        "Storage": "2TB NVMe SSD",
+        "Display": "17.3\" 4K",
+        "Battery": "99Wh",
+        "Weight": "3.2kg",
+        "OS": "Windows 11 Pro"
+      },
+      "reviews": [
+        { "name": "Hoàng Mạnh Trường",
+          "rating": 5,
+          "comment": "Hiệu năng cực mạnh, làm việc nặng không vấn đề"
+        }
+      ],
+      "createdAt": "2025-11-18T06:00:00.000Z"
+    },
+    {
+      "id": 8,
+      "name": "Gaming Laptop X3",
+      "image": "https://via.placeholder.com/600x400?text=Gaming+Laptop+X3",
+      "brand": "GamerTech",
+      "category": "Gaming Laptop",
+      "description": "Laptop gaming tầm trung với RTX 3070, màn 165Hz",
+      "price": 28990000,
+      "countInStock": 12,
+      "rating": 4.6,
+      "numReviews": 12,
+      "specs": {
+        "CPU": "Intel Core i7-12800H",
+        "GPU": "NVIDIA RTX 3070 8GB",
+        "RAM": "16GB DDR4",
+        "Storage": "1TB SSD",
+        "Display": "16\" FHD 165Hz",
+        "Battery": "80Wh",
+        "Weight": "2.4kg",
+        "OS": "Windows 11 Home"
+      },
+      "reviews": [
+        {
+          "name": "Nguyễn Hữu Tú",
+          "rating": 5,
+          "comment": "Game mượt, pin ổn"
+        }
+      ],
+      "createdAt": "2025-11-18T06:30:00.000Z"
+    },
+    {
+      "id": 9,
+      "name": "Office Laptop O3",
+      "image": "https://via.placeholder.com/600x400?text=Office+Laptop+O3",
+      "brand": "OfficePro",
+      "category": "Office Laptop",
+      "description": "Laptop văn phòng giá tốt, pin dài",
+      "price": 10990000,
+      "countInStock": 30,
+      "rating": 4.2,
+      "numReviews": 10,
+      "specs": {
+        "CPU": "Intel Core i3-1215U",
+        "GPU": "Intel UHD Graphics",
+        "RAM": "8GB DDR4",
+        "Storage": "256GB SSD",
+        "Display": "14\" FHD",
+        "Battery": "60Wh",
+        "Weight": "1.3kg",
+        "OS": "Windows 11 Home"
+      },
+      "reviews": [
+        {
+          "name": "Trần Anh Tùng",
+          "rating": 4,
+          "comment": "Phù hợp văn phòng, giá tốt"
+        }
+      ],
+      "createdAt": "2025-11-18T07:00:00.000Z"
+    }
+  ],
+  "orders": [
+    {
+      "id": 1,
+      "user": {
+        "id": 2,
+        "name": "Trần Anh Tùng",
+        "email": "trantung@gmail.com"
+      },
+      "orderItems": [
+        {
+          "id": 1,
+          "name": "Gaming Laptop X1",
+          "image": "https://via.placeholder.com/600x400?text=Gaming+Laptop+X1",
+          "price": 52990000,
+          "qty": 1,
+          "product": 1
+        }
+      ],
+      "shippingAddress": {
+        "address": "12 Nguyễn Huệ, Quận 1",
+        "city": "TP. Hồ Chí Minh",
+        "postalCode": "700000",
+        "country": "Việt Nam"
+      },
+      "paymentMethod": "PayPal",
+      "paymentResult": {
+        "id": "PAY123456789",
+        "status": "COMPLETED",
+        "update_time": "2025-11-18T10:00:00.000Z",
+        "email_address": "trantung@gmail.com"
+      },
+      "taxPrice": 5299000,
+      "shippingPrice": 150000,
+      "totalPrice": 58590000,
+      "isPaid": true,
+      "paidAt": "2025-11-18T10:00:00.000Z",
+      "isDelivered": true,
+      "deliveredAt": "2025-11-20T14:00:00.000Z",
+      "createdAt": "2025-11-18T09:30:00.000Z"
+    },
+    {
+      "id": 2,
+      "user": {
+        "id": 3,
+        "name": "Nguyễn Thị Minh",
+        "email": "minh.nguyen@example.com"
+      },
+      "orderItems": [
+        {
+          "id": 2,
+          "name": "Laptop Văn Phòng A5",
+          "image": "https://via.placeholder.com/600x400?text=Office+Laptop+A5",
+          "price": 15490000,
+          "qty": 1,
+          "product": 5
+        }
+      ],
+      "shippingAddress": {
+        "address": "45 Lê Duẩn, Quận Hải Châu",
+        "city": "Đà Nẵng",
+        "postalCode": "550000",
+        "country": "Việt Nam"
+      },
+      "paymentMethod": "PayPal",
+      "paymentResult": {
+        "id": "PAY987654321",
+        "status": "COMPLETED",
+        "update_time": "2025-11-18T12:15:00.000Z",
+        "email_address": "minh.nguyen@example.com"
+      },
+      "taxPrice": 1549000,
+      "shippingPrice": 120000,
+      "totalPrice": 17159000,
+      "isPaid": true,
+      "paidAt": "2025-11-18T12:15:00.000Z",
+      "isDelivered": false,
+      "deliveredAt": null,
+      "createdAt": "2025-11-18T11:50:00.000Z"
+    },
+    {
+      "id": 3,
+      "user": {
+        "id": 4,
+        "name": "Phạm Quốc Huy",
+        "email": "huy.pham@example.com"
+      },
+      "orderItems": [
+        {
+          "id": 3,
+          "name": "Gaming Laptop X2",
+          "image": "https://via.placeholder.com/600x400?text=Gaming+Laptop+X2",
+          "price": 42990000,
+          "qty": 1,
+          "product": 2
+        }
+      ],
+      "shippingAddress": {
+        "address": "21 Hoàng Văn Thụ, Quận Phú Nhuận",
+        "city": "TP. Hồ Chí Minh",
+        "postalCode": "700000",
+        "country": "Việt Nam"
+      },
+      "paymentMethod": "VNPay",
+      "paymentResult": {
+        "id": "VNP11223344",
+        "status": "COMPLETED",
+        "update_time": "2025-11-19T09:00:00.000Z",
+        "email_address": "huy.pham@example.com"
+      },
+      "taxPrice": 4299000,
+      "shippingPrice": 150000,
+      "totalPrice": 47439000,
+      "isPaid": true,
+      "paidAt": "2025-11-19T09:00:00.000Z",
+      "isDelivered": true,
+      "deliveredAt": "2025-11-21T16:00:00.000Z",
+      "createdAt": "2025-11-19T08:30:00.000Z"
+    },
+    {
+      "id": 4,
+      "user": {
+        "id": 5,
+        "name": "Lê Hoàng Bảo",
+        "email": "bao.le@example.com"
+      },
+      "orderItems": [
+        {
+          "id": 4,
+          "name": "Laptop Đồ Họa Pro Z7",
+          "image": "https://via.placeholder.com/600x400?text=Pro+Graphic+Z7",
+          "price": 35990000,
+          "qty": 1,
+          "product": 6
+        }
+      ],
+      "shippingAddress": {
+        "address": "80 Trần Hưng Đạo, Quận Hoàn Kiếm",
+        "city": "Hà Nội",
+        "postalCode": "100000",
+        "country": "Việt Nam"
+      },
+      "paymentMethod": "PayPal",
+      "paymentResult": {
+        "id": "PAY6677889900",
+        "status": "COMPLETED",
+        "update_time": "2025-11-17T15:45:00.000Z",
+        "email_address": "bao.le@example.com"
+      },
+      "taxPrice": 3599000,
+      "shippingPrice": 100000,
+      "totalPrice": 39689000,
+      "isPaid": true,
+      "paidAt": "2025-11-17T15:45:00.000Z",
+      "isDelivered": true,
+      "deliveredAt": "2025-11-19T10:20:00.000Z",
+      "createdAt": "2025-11-17T15:20:00.000Z"
+    },
+    {
+      "id": 5,
+      "user": {
+        "id": 6,
+        "name": "Vũ Ngọc Hà",
+        "email": "ha.vu@example.com"
+      },
+      "orderItems": [
+        {
+          "id": 5,
+          "name": "Ultrabook AirLite S3",
+          "image": "https://via.placeholder.com/600x400?text=AirLite+S3",
+          "price": 21990000,
+          "qty": 1,
+          "product": 8
+        }
+      ],
+      "shippingAddress": {
+        "address": "19 CMT8, Quận 10",
+        "city": "TP. Hồ Chí Minh",
+        "postalCode": "700000",
+        "country": "Việt Nam"
+      },
+      "paymentMethod": "COD",
+      "paymentResult": {},
+      "taxPrice": 2199000,
+      "shippingPrice": 150000,
+      "totalPrice": 23739000,
+      "isPaid": false,
+      "paidAt": null,
+      "isDelivered": false,
+      "deliveredAt": null,
+      "createdAt": "2025-11-20T10:10:00.000Z"
+    },
+    {
+      "id": 6,
+      "user": {
+        "id": 7,
+        "name": "Đặng Thanh Tâm",
+        "email": "tam.dang@example.com"
+      },
+      "orderItems": [
+        {
+          "id": 6,
+          "name": "Laptop Sinh Viên S1",
+          "image": "https://via.placeholder.com/600x400?text=Student+S1",
+          "price": 11990000,
+          "qty": 1,
+          "product": 9
+        }
+      ],
+      "shippingAddress": {
+        "address": "56 Nguyễn Trãi, Quận 5",
+        "city": "TP. Hồ Chí Minh",
+        "postalCode": "700000",
+        "country": "Việt Nam"
+      },
+      "paymentMethod": "Momo",
+      "paymentResult": {
+        "id": "MOMO123456",
+        "status": "COMPLETED",
+        "update_time": "2025-11-20T08:00:00.000Z",
+        "email_address": "tam.dang@example.com"
+      },
+      "taxPrice": 1199000,
+      "shippingPrice": 100000,
+      "totalPrice": 13189000,
+      "isPaid": true,
+      "paidAt": "2025-11-20T08:00:00.000Z",
+      "isDelivered": true,
+      "deliveredAt": "2025-11-22T11:00:00.000Z",
+      "createdAt": "2025-11-20T07:30:00.000Z"
+    },
+    {
+      "id": 7,
+      "user": {
+        "id": 8,
+        "name": "Hoàng Mỹ Duyên",
+        "email": "duyen.hoang@example.com"
+      },
+      "orderItems": [
+        {
+          "id": 7,
+          "name": "MacBook Pro M3 2025",
+          "image": "https://via.placeholder.com/600x400?text=MacBook+Pro+M3",
+          "price": 59990000,
+          "qty": 1,
+          "product": 10
+        }
+      ],
+      "shippingAddress": {
+        "address": "112 Võ Văn Kiệt, Quận 1",
+        "city": "TP. Hồ Chí Minh",
+        "postalCode": "700000",
+        "country": "Việt Nam"
+      },
+      "paymentMethod": "PayPal",
+      "paymentResult": {
+        "id": "PAY44556677",
+        "status": "COMPLETED",
+        "update_time": "2025-11-21T09:40:00.000Z",
+        "email_address": "duyen.hoang@example.com"
+      },
+      "taxPrice": 5999000,
+      "shippingPrice": 150000,
+      "totalPrice": 66139000,
+      "isPaid": true,
+      "paidAt": "2025-11-21T09:40:00.000Z",
+      "isDelivered": false,
+      "deliveredAt": null,
+      "createdAt": "2025-11-21T09:10:00.000Z"
+    },
+    {
+      "id": 8,
+      "user": {
+        "id": 9,
+        "name": "Trịnh Văn Long",
+        "email": "long.trinh@example.com"
+      },
+      "orderItems": [
+        {
+          "id": 8,
+          "name": "Chromebook C6",
+          "image": "https://via.placeholder.com/600x400?text=Chromebook+C6",
+          "price": 7990000,
+          "qty": 1,
+          "product": 11
+        }
+      ],
+      "shippingAddress": {
+        "address": "33 Nguyễn Thái Học, TP. Huế",
+        "city": "Huế",
+        "postalCode": "530000",
+        "country": "Việt Nam"
+      },
+      "paymentMethod": "COD",
+      "paymentResult": {},
+      "taxPrice": 799000,
+      "shippingPrice": 90000,
+      "totalPrice": 8879000,
+      "isPaid": false,
+      "paidAt": null,
+      "isDelivered": false,
+      "deliveredAt": null,
+      "createdAt": "2025-11-22T14:00:00.000Z"
+    },
+    {
+      "id": 9,
+      "user": {
+        "id": 10,
+        "name": "Bùi Minh Nhật",
+        "email": "nhat.bui@example.com"
+      },
+      "orderItems": [
+        {
+          "id": 9,
+          "name": "Laptop Business Elite B9",
+          "image": "https://via.placeholder.com/600x400?text=Business+Elite+B9",
+          "price": 28990000,
+          "qty": 1,
+          "product": 12
+        }
+      ],
+      "shippingAddress": {
+        "address": "55 Phan Đình Phùng, TP. Đà Lạt",
+        "city": "Đà Lạt",
+        "postalCode": "670000",
+        "country": "Việt Nam"
+      },
+      "paymentMethod": "Bank Transfer",
+      "paymentResult": {
+        "id": "BANK55667788",
+        "status": "COMPLETED",
+        "update_time": "2025-11-23T10:30:00.000Z",
+        "email_address": "nhat.bui@example.com"
+      },
+      "taxPrice": 2899000,
+      "shippingPrice": 130000,
+      "totalPrice": 31919000,
+      "isPaid": true,
+      "paidAt": "2025-11-23T10:30:00.000Z",
+      "isDelivered": false,
+      "deliveredAt": null,
+      "createdAt": "2025-11-23T10:00:00.000Z"
+    },
+    {
+      "id": 10,
+      "user": {
+        "id": 11,
+        "name": "Mai Thanh Phúc",
+        "email": "phuc.mai@example.com"
+      },
+      "orderItems": [
+        {
+          "id": 10,
+          "name": "Laptop MiniBook M2",
+          "image": "https://via.placeholder.com/600x400?text=MiniBook+M2",
+          "price": 9990000,
+          "qty": 1,
+          "product": 15
+        }
+      ],
+      "shippingAddress": {
+        "address": "9 Hoàng Diệu, TP. Cần Thơ",
+        "city": "Cần Thơ",
+        "postalCode": "900000",
+        "country": "Việt Nam"
+      },
+      "paymentMethod": "Momo",
+      "paymentResult": {
+        "id": "MOMO987654",
+        "status": "COMPLETED",
+        "update_time": "2025-11-24T11:15:00.000Z",
+        "email_address": "phuc.mai@example.com"
+      },
+      "taxPrice": 999000,
+      "shippingPrice": 100000,
+      "totalPrice": 11089000,
+      "isPaid": true,
+      "paidAt": "2025-11-24T11:15:00.000Z",
+      "isDelivered": true,
+      "deliveredAt": "2025-11-26T09:00:00.000Z",
+      "createdAt": "2025-11-24T10:45:00.000Z"
+    },
+    {
+      "id": 11,
+      "user": {
+        "id": 12,
+        "name": "Hồ Gia Khang",
+        "email": "khang.ho@example.com"
+      },
+      "orderItems": [
+        {
+          "id": 11,
+          "name": "Workstation PowerMaster W9",
+          "image": "https://via.placeholder.com/600x400?text=PowerMaster+W9",
+          "price": 72990000,
+          "qty": 1,
+          "product": 20
+        }
+      ],
+      "shippingAddress": {
+        "address": "101 Nguyễn Văn Cừ, Quận Long Biên",
+        "city": "Hà Nội",
+        "postalCode": "100000",
+        "country": "Việt Nam"
+      },
+      "paymentMethod": "Bank Transfer",
+      "paymentResult": {
+        "id": "BANK332211",
+        "status": "COMPLETED",
+        "update_time": "2025-11-24T16:25:00.000Z",
+        "email_address": "khang.ho@example.com"
+      },
+      "taxPrice": 7299000,
+      "shippingPrice": 150000,
+      "totalPrice": 80439000,
+      "isPaid": true,
+      "paidAt": "2025-11-24T16:25:00.000Z",
+      "isDelivered": false,
+      "deliveredAt": null,
+      "createdAt": "2025-11-24T15:50:00.000Z"
+    }
+  ],
+  "categories": ["Gaming Laptop","Office Laptop","Ultrabook","Workstation Laptop"],
+  "brands": ["GamerTech","OfficePro","SlimTech","CreatorPro","TechMaster","UltraBookPro"]
+}
