@@ -121,10 +121,17 @@
     import { getFirestore, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // Khai báo biến toàn cục (sử dụng giá trị mặc định nếu không tồn tại trong môi trường)
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+    const firebaseConfig = {
+        apiKey: "AIzaSyXXXXXXX",
+        authDomain: "myapp.firebaseapp.com",
+        projectId: "myapp",
+        storageBucket: "myapp.appspot.com",
+        messagingSenderId: "123456789",
+        appId: "1:123456789:web:abcd1234"
+    };
 
+    // Không dùng custom token
+    const initialAuthToken = null;
     // Khởi tạo Firebase
     let app, db, auth;
     let userId = null; 
