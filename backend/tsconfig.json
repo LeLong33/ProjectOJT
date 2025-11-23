@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    /* Cấu hình Module */
+    "target": "ES2020", 
+    "module": "CommonJS", 
+    "rootDir": "./src", 
+    "outDir": "./dist", 
+    "esModuleInterop": true, 
+    "forceConsistentCasingInFileNames": true,
+    
+    /* Kiểm tra Kiểu */
+    "strict": true,
+    "skipLibCheck": true,
+    
+    /* Cấu hình Đường dẫn & Khác */
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "experimentalDecorators": true, // Tùy chọn nếu bạn dùng các thư viện cần decorators
+    "emitDecoratorMetadata": true
+  },
+  "include": [
+    "src/**/*.ts" // Chỉ biên dịch các file .ts trong thư mục src
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
