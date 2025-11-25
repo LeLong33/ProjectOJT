@@ -13,10 +13,10 @@ import {
 export async function getAllProducts(req: Request, res: Response) {
     try {
         const products = await findAllActiveProducts();
-        return res.status(200).json({ success: true, data: products });
+        res.status(200).json({ success: true, data: products });
     } catch (error) {
         console.error("Error fetching products:", error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             message: "Lỗi server khi lấy danh sách sản phẩm"
         });
@@ -29,15 +29,21 @@ export async function getAllProducts(req: Request, res: Response) {
 export async function getProductById(req: Request, res: Response) {
     try {
         const id = Number(req.params.id);
-        if (!id) return res.status(400).json({ success: false, message: "ID không hợp lệ" });
+        if (!id) {
+            res.status(400).json({ success: false, message: "ID không hợp lệ" });
+            return;
+        }
 
         const product = await findProductById(id);
-        if (!product) return res.status(404).json({ success: false, message: "Không tìm thấy sản phẩm" });
+        if (!product) {
+            res.status(404).json({ success: false, message: "Không tìm thấy sản phẩm" });
+            return;
+        }
 
-        return res.status(200).json({ success: true, data: product });
+        res.status(200).json({ success: true, data: product });
     } catch (error) {
         console.error("Error fetching product:", error);
-        return res.status(500).json({ success: false, message: "Lỗi server" });
+        res.status(500).json({ success: false, message: "Lỗi server" });
     }
 }
 
@@ -49,12 +55,13 @@ export async function createNewProduct(req: Request, res: Response) {
         const { name, price, quantity, description, rating } = req.body;
 
         if (!name || !price) {
-            return res.status(400).json({ success: false, message: "Thiếu dữ liệu bắt buộc" });
+            res.status(400).json({ success: false, message: "Thiếu dữ liệu bắt buộc" });
+            return;
         }
 
         const result = await createProduct({ name, price, quantity, description, rating });
 
-        return res.status(201).json({
+        res.status(201).json({
             success: true,
             message: "Tạo sản phẩm thành công",
             product_id: result.insertId
@@ -62,7 +69,7 @@ export async function createNewProduct(req: Request, res: Response) {
 
     } catch (error) {
         console.error("Error creating product:", error);
-        return res.status(500).json({ success: false, message: "Lỗi server khi tạo sản phẩm" });
+        res.status(500).json({ success: false, message: "Lỗi server khi tạo sản phẩm" });
     }
 }
 
@@ -77,17 +84,18 @@ export async function updateProductById(req: Request, res: Response) {
         const updated = await updateProduct(id, data);
 
         if (updated.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: "Không tìm thấy sản phẩm để cập nhật" });
+            res.status(404).json({ success: false, message: "Không tìm thấy sản phẩm để cập nhật" });
+            return;
         }
 
-        return res.status(200).json({
+        res.status(200).json({
             success: true,
             message: "Cập nhật sản phẩm thành công"
         });
 
     } catch (error) {
         console.error("Error updating product:", error);
-        return res.status(500).json({ success: false, message: "Lỗi server khi cập nhật" });
+        res.status(500).json({ success: false, message: "Lỗi server khi cập nhật" });
     }
 }
 
@@ -100,16 +108,17 @@ export async function deleteProductById(req: Request, res: Response) {
 
         const deleted = await deleteProduct(id);
         if (deleted.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: "Không tìm thấy sản phẩm để xóa" });
+            res.status(404).json({ success: false, message: "Không tìm thấy sản phẩm để xóa" });
+            return;
         }
 
-        return res.status(200).json({
+        res.status(200).json({
             success: true,
             message: "Xóa sản phẩm thành công"
         });
 
     } catch (error) {
         console.error("Error deleting product:", error);
-        return res.status(500).json({ success: false, message: "Lỗi server khi xóa sản phẩm" });
+        res.status(500).json({ success: false, message: "Lỗi server khi xóa sản phẩm" });
     }
 }
