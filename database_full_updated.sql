@@ -1,43 +1,45 @@
 CREATE DATABASE IF NOT EXISTS TechStore;
 USE TechStore;
 
+
 CREATE TABLE accounts (
-    account_id INT PRIMARY KEY,
+    account_id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100),
     email VARCHAR(100) UNIQUE,
     password VARCHAR(255),
     phone_number VARCHAR(20),
-    address VARCHAR(255),
     role ENUM('user', 'staff', 'admin')
 );
 
 CREATE TABLE addresses (
-    address_id INT PRIMARY KEY NOT NULL,
+    address_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
     account_id INT,
-    recipient_name VARCHAR(100),
-    phone_number VARCHAR(20),
-    address VARCHAR(255),
-    district VARCHAR(100),
-    city VARCHAR(100),
-    country VARCHAR(100),
+    recipient_name VARCHAR(100) NOT NULL,
+    phone_number VARCHAR(20) NOT NULL,
+    address VARCHAR(255) NOT NULL,
+    district VARCHAR(100) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    country VARCHAR(100) NOT NULL,
+    is_default BOOLEAN,
     FOREIGN KEY (account_id) REFERENCES accounts(account_id)
 );
 
 CREATE TABLE categories (
-	category_id INT PRIMARY KEY,
+	category_id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100),
-    parent_id	INT
+    parent_id INT,
+    FOREIGN KEY (parent_id) REFERENCES categories(category_id)
 );
 
 CREATE TABLE brands (
-	brand_id INT PRIMARY KEY,
+	brand_id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100)
 );
 
 CREATE TABLE products (
-    product_id INT PRIMARY KEY,
+    product_id INT PRIMARY KEY AUTO_INCREMENT, 
     name VARCHAR(255),
-    code VARCHAR(100),
+    code VARCHAR(100) UNIQUE,
     price DECIMAL(10,2),
     quantity INT,
     brand_id INT,
@@ -70,7 +72,7 @@ CREATE TABLE productDetails (
 
 
 CREATE TABLE productImages (
-	image_id INT PRIMARY KEY,
+	image_id INT PRIMARY KEY AUTO_INCREMENT,
     product_id INT,
     url VARCHAR(255),
     is_main BOOLEAN,
@@ -80,15 +82,16 @@ CREATE TABLE productImages (
 CREATE TABLE product_reviews (
     id INT AUTO_INCREMENT PRIMARY KEY,
     product_id INT,
-    name VARCHAR(100),
+    account_id INT,
     rating INT,
     comment TEXT,
-    FOREIGN KEY (product_id) REFERENCES products(product_id)
+    FOREIGN KEY (product_id) REFERENCES products(product_id),
+    FOREIGN KEY (account_id) REFERENCES accounts(account_id)
 );
 
 
 CREATE TABLE orders (
-    order_id INT PRIMARY KEY,
+    order_id INT PRIMARY KEY AUTO_INCREMENT,
     account_id INT,
     guest_name VARCHAR(100),
     guest_phone VARCHAR(20),
