@@ -1,30 +1,24 @@
-import { useState } from 'react';
-import { Navbar } from './components/Navbar';
-import { HeroCarousel } from './components/HeroCarousel';
-import { CategoryGrid } from './components/CategoryGrid';
-import { FlashSale } from './components/FlashSale';
-import { ProductShowcase } from './components/ProductShowcase';
-import { Footer } from './components/Footer';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import HomePage from "./pages/HomePage";
+import SignInPage from "./pages/SignInPage";
+import SignUpPage from "./pages/SignUpPage";
+import { Toaster } from "sonner";
 
-export default function App() {
-  const [cartCount, setCartCount] = useState(0);
-
-  const handleAddToCart = () => {
-    setCartCount(prev => prev + 1);
-  };
-
+function App() {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <Navbar cartCount={cartCount} />
-      
-      <main className="pt-20">
-        <HeroCarousel />
-        <CategoryGrid />
-        <FlashSale onAddToCart={handleAddToCart} />
-        <ProductShowcase onAddToCart={handleAddToCart} />
-      </main>
-      
-      <Footer />
-    </div>
+    <>
+    <Toaster richColors/>
+
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/signin" element={<SignInPage />}/>
+        <Route path="/signup" element={<SignUpPage />}/>
+
+      </Routes>
+    </BrowserRouter>
+    </>
   );
 }
+
+export default App;

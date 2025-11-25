@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Search, User, ShoppingCart, ChevronDown, ChevronRight, Cpu, Monitor, Laptop, Headphones, PcCase } from 'lucide-react';
+import { Link } from 'react-router';
 
 interface NavbarProps {
   cartCount: number;
@@ -10,23 +11,23 @@ export function Navbar({ cartCount }: NavbarProps) {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
 
   const categories = [
-    { 
-      icon: <Laptop className="w-5 h-5" />, 
+    {
+      icon: <Laptop className="w-5 h-5" />,
       name: 'Laptop',
       brands: ['ASUS', 'MSI', 'Dell', 'HP', 'Lenovo', 'Acer', 'Apple']
     },
-    { 
-      icon: <Monitor className="w-5 h-5" />, 
+    {
+      icon: <Monitor className="w-5 h-5" />,
       name: 'Màn Hình',
       brands: ['Samsung', 'LG', 'Dell', 'ASUS', 'ViewSonic', 'BenQ']
     },
-    { 
-      icon: <PcCase className="w-5 h-5" />, 
+    {
+      icon: <PcCase className="w-5 h-5" />,
       name: 'PC & Linh Kiện',
       brands: ['Intel', 'Predator', 'NVIDIA', 'Corsair', 'MSI']
     },
-    { 
-      icon: <Headphones className="w-5 h-5" />, 
+    {
+      icon: <Headphones className="w-5 h-5" />,
       name: 'Phụ Kiện',
       brands: ['Logitech', 'Razer', 'SteelSeries', 'Corsair', 'HyperX', 'Keychron']
     },
@@ -46,8 +47,8 @@ export function Navbar({ cartCount }: NavbarProps) {
 
           {/* Categories Dropdown - Main Navigation (Made compact with flex-none) */}
           <div className="flex-none hidden md:flex justify-center">
-            <div 
-              className="relative pb-4" // Thêm khoảng đệm phía dưới để bao gồm cả menu dropdown
+            <div
+              className="relative pb-4"
               onMouseEnter={() => setShowCategories(true)}
               onMouseLeave={() => {
                 setShowCategories(false);
@@ -58,10 +59,9 @@ export function Navbar({ cartCount }: NavbarProps) {
                 <span className="text-base font-medium">Danh Mục Sản Phẩm</span>
                 <ChevronDown className="w-4 h-4" />
               </button>
-              
+
               {/* Dropdown Menu (Guarded by showCategories state) */}
               {showCategories && (
-                // Đã thay đổi căn chỉnh: Loại bỏ left-1/2 và -translate-x-1/2, thay bằng left-0 để neo vào cạnh trái nút bấm.
                 <div className="absolute top-full left-0 mt-1 flex bg-[#1a1a1a] border border-gray-700 rounded-xl shadow-2xl overflow-hidden min-w-[500px]">
                   {/* Categories List */}
                   <div className="w-64 py-2">
@@ -69,27 +69,24 @@ export function Navbar({ cartCount }: NavbarProps) {
                       <div
                         key={index}
                         onMouseEnter={() => setSelectedCategory(index)}
-                        className={`flex items-center justify-between gap-3 px-4 py-2 cursor-pointer transition-all mx-2 rounded-lg ${
-                          selectedCategory === index 
-                            ? 'bg-[#007AFF]/20 text-[#007AFF]' 
+                        className={`flex items-center justify-between gap-3 px-4 py-2 cursor-pointer transition-all mx-2 rounded-lg ${selectedCategory === index
+                            ? 'bg-[#007AFF]/20 text-[#007AFF]'
                             : 'hover:bg-[#007AFF]/5 text-gray-300'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`transition-colors ${
-                            selectedCategory === index ? 'text-[#007AFF]' : 'text-gray-400'
-                          }`}>
+                          <div className={`transition-colors ${selectedCategory === index ? 'text-[#007AFF]' : 'text-gray-400'
+                            }`}>
                             {category.icon}
                           </div>
                           <span className="font-medium">{category.name}</span>
                         </div>
-                        <ChevronRight className={`w-4 h-4 transition-colors ${
-                          selectedCategory === index ? 'text-[#007AFF]' : 'text-gray-500'
-                        }`} />
+                        <ChevronRight className={`w-4 h-4 transition-colors ${selectedCategory === index ? 'text-[#007AFF]' : 'text-gray-500'
+                          }`} />
                       </div>
                     ))}
                   </div>
-                  
+
                   {/* Brands List (Second level) */}
                   {selectedCategory !== null && (
                     <div className="w-56 bg-[#141414] border-l border-gray-800 p-4 transition-all duration-300">
@@ -126,10 +123,13 @@ export function Navbar({ cartCount }: NavbarProps) {
 
           {/* User Actions */}
           <div className="flex items-center gap-2 flex-none">
-            <button className="p-3 text-gray-400 hover:text-white hover:bg-[#1a1a1a] rounded-xl transition-all shadow-md">
+            <Link
+              to="/signin"
+              className="p-3 text-gray-400 hover:text-white hover:bg-[#1a1a1a] rounded-xl transition-all shadow-md flex items-center justify-center"
+            >
               <User className="w-6 h-6" />
-            </button>
-            
+            </Link>
+
             <button className="relative p-3 text-gray-400 hover:text-white hover:bg-[#1a1a1a] rounded-xl transition-all shadow-md">
               <ShoppingCart className="w-6 h-6" />
               {cartCount > 0 && (
@@ -154,8 +154,8 @@ export default function App() {
         <h1 className="text-4xl font-extrabold text-[#007AFF] mb-4">Chào mừng đến với TechStore</h1>
         <p className="text-gray-400">Di chuột lên "Danh Mục Sản Phẩm" để kiểm tra menu dropdown đa cấp mới.</p>
         <div className="h-[1000px] mt-8 bg-[#1a1a1a] rounded-xl p-6 shadow-xl">
-            {/* Scrollable content to test fixed navbar */}
-            <p className='text-gray-500'>Nội dung trang...</p>
+          {/* Scrollable content to test fixed navbar */}
+          <p className='text-gray-500'>Nội dung trang...</p>
         </div>
       </div>
     </div>
