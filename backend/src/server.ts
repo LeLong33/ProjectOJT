@@ -6,6 +6,7 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import { checkDbConnection } from './config/database';
+import passport from './config/passport';
 
 // Import Routes
 import authRoutes from './routes/AuthRoutes';
@@ -17,6 +18,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware cơ bản
 app.use(cors());
 app.use(express.json());
+app.use(passport.initialize());
 
 // Route mặc định
 app.get('/', (req, res) => {
