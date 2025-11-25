@@ -1,46 +1,24 @@
-// backend/src/server.ts
+// src/server.ts
+import express, { Application } from 'express';
+import cors from 'cors';
 import dotenv from 'dotenv';
-// Load .env trước mọi import khác
+import authRoutes from './routes/AuthRoutes';
+// import productRoutes from './routes/ProductRoutes'; // Ví dụ cho routes khác
+
 dotenv.config();
 
-import express from 'express';
-import cors from 'cors';
-import { checkDbConnection } from './config/database';
-import passport from './config/passport';
-
-// Import Routes
-import authRoutes from './routes/AuthRoutes';
-import productRoutes from './routes/ProductRoutes';
-
-const app = express();
+const app: Application = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware cơ bản
+// Middleware
 app.use(cors());
-app.use(express.json());
-app.use(passport.initialize());
+app.use(express.json()); // Parse JSON body
 
-// Route mặc định
-app.get('/', (req, res) => {
-    res.send('TechStore API Service is running!');
-});
-
-// Register routes
+// Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);  // ⬅ ✔ Thêm Product API
+// app.use('/api/products', productRoutes);
 
-// Khởi động server
-const startServer = async () => {
-    const isConnected = await checkDbConnection();
-
-    if (!isConnected) {
-        console.error('❌ Không thể kết nối cơ sở dữ liệu. Server dừng lại.');
-        return;
-    }
-
-    app.listen(PORT, () => {
-        console.log(`⚡️ Server đang chạy tại http://localhost:${PORT}`);
-    });
-};
-
-startServer();
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});

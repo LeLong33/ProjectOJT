@@ -77,7 +77,7 @@ export async function findOrCreateGoogleUser(email: string, name: string): Promi
     // Giả định bạn đã đặt cột password là NULLABLE hoặc chúng ta sẽ dùng password tạm.
 
     const tempPassword = Math.random().toString(36).slice(-8); // Mật khẩu tạm ngẫu nhiên
-    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
     const query = `
         INSERT INTO accounts (name, email, password, phone_number, role)

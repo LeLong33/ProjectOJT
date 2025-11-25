@@ -3,6 +3,7 @@ import HomePage from "./pages/HomePage";
 import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
 import { Toaster } from "sonner";
+import AuthSuccess from "./pages/AuthSuccess";
 
 function App() {
   return (
@@ -12,9 +13,9 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/signin" element={<SignInPage />}/>
-        <Route path="/signup" element={<SignUpPage />}/>
-
+        <Route path="/login" element={<SignInPage />}/>
+        <Route path="/register" element={<SignUpPage />}/>
+        <Route path="/auth/success" element={<AuthSuccess />} />
       </Routes>
     </BrowserRouter>
     </>
