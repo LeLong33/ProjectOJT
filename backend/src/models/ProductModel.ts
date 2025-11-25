@@ -87,8 +87,8 @@ export async function updateProduct(id: number, data: any): Promise<ResultSetHea
         WHERE product_id = ?
     `;
 
-    const [result] = await db.query<ResultSetHeader>(query, values);
-    return result;
+    const [result] = await db.execute<ResultSetHeader>(query, values);
+    return result as ResultSetHeader;
 }
 
 /**
@@ -101,6 +101,6 @@ export async function deleteProduct(id: number): Promise<ResultSetHeader> {
         WHERE product_id = ?
     `;
 
-    const [result] = await db.query<ResultSetHeader>(query, [id]);
-    return result;
+    const [result] = await db.execute<ResultSetHeader>(query, [id]);
+    return result as ResultSetHeader;
 }

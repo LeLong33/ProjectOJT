@@ -12,17 +12,20 @@ export const register = async (req: Request, res: Response) => {
 
     // 1. Kiểm tra input cơ bản
     if (!name || !email || !password || !phoneNumber) {
-        return res.status(400).json({ message: 'Vui lòng điền đầy đủ các trường.' });
+        res.status(400).json({ message: 'Vui lòng điền đầy đủ các trường.' });
+        return;
     }
     if (password.length < 6) {
-        return res.status(400).json({ message: 'Mật khẩu phải có ít nhất 6 ký tự.' });
+        res.status(400).json({ message: 'Mật khẩu phải có ít nhất 6 ký tự.' });
+        return;
     }
 
     try {
         // 2. Kiểm tra email đã tồn tại chưa
         const existingAccount = await AccountModel.findByEmail(email);
         if (existingAccount) {
-            return res.status(409).json({ message: 'Email này đã được sử dụng.' });
+            res.status(409).json({ message: 'Email này đã được sử dụng.' });
+            return;
         }
 
         // 3. Tạo tài khoản
@@ -51,7 +54,8 @@ export const login = async (req: Request, res: Response) => {
 
     // 1. Kiểm tra input
     if (!email || !password) {
-        return res.status(400).json({ message: 'Vui lòng nhập Email và Mật khẩu.' });
+        res.status(400).json({ message: 'Vui lòng nhập Email và Mật khẩu.' });
+        return;
     }
 
     try {
@@ -61,7 +65,8 @@ export const login = async (req: Request, res: Response) => {
         // 3. Kiểm tra sự tồn tại và mật khẩu
         // bcrypt.compare() so sánh mật khẩu plain text với hash trong DB
         if (!account || !(await bcrypt.compare(password, account.password || ''))) {
-            return res.status(401).json({ message: 'Email hoặc mật khẩu không chính xác.' });
+            res.status(401).json({ message: 'Email hoặc mật khẩu không chính xác.' });
+            return;
         }
 
         // 4. Tạo token JWT

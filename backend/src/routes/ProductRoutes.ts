@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, RequestHandler } from 'express';
 import {
     getAllProducts,
     getProductById,
@@ -10,10 +10,10 @@ import {
 const router = Router();
 
 // CRUD
-router.get('/', getAllProducts);          // GET all
-router.get('/:id', getProductById);        // GET by ID
-router.post('/', createNewProduct);        // CREATE
-router.put('/:id', updateProductById);     // UPDATE
-router.delete('/:id', deleteProductById);  // DELETE
+router.get('/', getAllProducts as RequestHandler);          // GET all
+router.get('/:id', getProductById as RequestHandler);        // GET by ID
+router.post('/', createNewProduct as RequestHandler);        // CREATE
+router.put('/:id', updateProductById as RequestHandler);     // UPDATE
+router.delete('/:id', deleteProductById as RequestHandler);  // DELETE
 
 export default router;
