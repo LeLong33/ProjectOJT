@@ -124,7 +124,7 @@ export function Navbar({ cartCount }: NavbarProps) {
           {/* User Actions */}
           <div className="flex items-center gap-2 flex-none">
             <Link
-              to="/signin"
+              to="/login"
               className="p-3 text-gray-400 hover:text-white hover:bg-[#1a1a1a] rounded-xl transition-all shadow-md flex items-center justify-center"
             >
               <User className="w-6 h-6" />
