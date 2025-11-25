@@ -1,34 +1,39 @@
-// backend/src/server.ts (Phần cập nhật)
+// backend/src/server.ts
 import dotenv from 'dotenv';
-// Load .env ngay lập tức trước khi import bất kỳ module nào dùng env
+// Load .env trước mọi import khác
 dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
 import { checkDbConnection } from './config/database';
+
+// Import Routes
 import authRoutes from './routes/AuthRoutes';
+import productRoutes from './routes/ProductRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware cơ bản
-app.use(cors()); 
-app.use(express.json()); // Đọc body JSON từ request
+app.use(cors());
+app.use(express.json());
 
-// Định tuyến chính
+// Route mặc định
 app.get('/', (req, res) => {
     res.send('TechStore API Service is running!');
 });
 
-// Sử dụng các định tuyến đã tạo
-app.use('/api/auth', authRoutes); // Thêm đường dẫn Auth
+// Register routes
+app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);  // ⬅ ✔ Thêm Product API
 
-// Khởi động server (Hàm checkDbConnection phải được code trong config/db.ts)
+// Khởi động server
 const startServer = async () => {
-    const isConnected = await checkDbConnection(); // Giả định hàm này đã có
+    const isConnected = await checkDbConnection();
+
     if (!isConnected) {
-        console.error('Ứng dụng không thể khởi động nếu không kết nối được DB.');
-        return; 
+        console.error('❌ Không thể kết nối cơ sở dữ liệu. Server dừng lại.');
+        return;
     }
 
     app.listen(PORT, () => {
