@@ -2,39 +2,55 @@
 import { Router, RequestHandler } from 'express';
 import { register, login } from '../controllers/AuthController';
 import * as AccountModel from '../models/AccountModel';
-import passport from '../config/passport'; // Import Passport đã cấu hình
+import passport from '../config/passport'; 
 import { signToken } from '../utils/jwt';
 
+// Định nghĩa Router
 const router = Router();
 
-router.post('/register', register as RequestHandler); // POST /api/auth/register
-router.post('/login', login as RequestHandler); // POST /api/auth/login
-// --- Google Auth ---
+// --- 1. Local Auth ---
+router.post('/register', register as RequestHandler);
+router.post('/login', login as RequestHandler);
 
-// 1. Chuyển hướng người dùng đến Google để xác thực
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+// --- 2. Google Auth ---
 
-// 2. Google gọi lại (Callback) sau khi user xác thực
+// Khởi tạo Google Auth
+router.get(
+    '/google', 
+    passport.authenticate('google', { 
+        scope: ['profile', 'email'], 
+        session: false // Luôn đặt session: false cho API
+    })
+);
+
+// Xử lý Google Callback
 router.get(
     '/google/callback', 
-    passport.authenticate('google', { failureRedirect: '/api/auth/google/failure', session: false }),
+    passport.authenticate('google', { 
+        failureRedirect: '/api/auth/google/failure', 
+        session: false 
+    }),
     (req, res) => {
-        // Sau khi xác thực thành công, req.user chứa thông tin user từ Passport Strategy
+        // Lấy thông tin người dùng từ Passport (đã qua findOrCreateGoogleUser)
         const user = req.user as AccountModel.Account;
         
-        // Tạo JWT và trả về cho Frontend
+        // Tạo JWT
         const token = signToken(user.account_id, user.role);
         
-        // Thường là chuyển hướng người dùng trở lại trang chủ Frontend với token trong URL/Cookie
-        // Ví dụ: http://localhost:3000/auth/success?token=...
-        res.redirect(`http://localhost:3000/auth/success?token=${token}`);
+        // Chuyển hướng về Frontend với token
+        // Sử dụng biến môi trường (nếu có) để Frontend URL linh hoạt hơn:
+        const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+        // Chuyển hướng thành công
+        res.redirect(`${FRONTEND_URL}/auth/success?token=${token}`);
     }
 );
 
-// 3. Route xử lý thất bại (Tạm thời)
+// Route xử lý thất bại
 router.get('/google/failure', (req, res) => {
-    res.status(401).json({ success: false, message: 'Đăng nhập Google thất bại.' });
+    // Chuyển hướng thất bại về Frontend để hiển thị thông báo lỗi
+    const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${FRONTEND_URL}/auth/failure?error=Đăng nhập Google thất bại.`);
 });
-
 
 export default router;

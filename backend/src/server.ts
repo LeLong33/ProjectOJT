@@ -28,6 +28,7 @@ app.get('/', (req, res) => {
 // Register routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);  // ⬅ ✔ Thêm Product API
+app.use('/api', authRoutes);
 
 // Khởi động server
 const startServer = async () => {
