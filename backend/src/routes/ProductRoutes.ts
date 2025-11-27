@@ -13,13 +13,22 @@ router.get('/', ProductController.getAllProducts as RequestHandler);
 router.get('/:id', ProductController.getProductById as RequestHandler);
 
 // ---------------- PROTECTED ROUTES ----------------
-// Tạo sản phẩm mới (chỉ admin hoặc user có quyền)
-router.post('/', protect as RequestHandler, allowProductCRUD as RequestHandler, ProductController.createNewProduct as RequestHandler);
+// Tạo sản phẩm mới (chỉ admin hoặc staff)
+router.post('/', protect as RequestHandler,
+    allowProductCRUD as RequestHandler,
+    ProductController.createNewProduct as RequestHandler
+);
 
 // Cập nhật sản phẩm theo ID
-router.put('/:id', protect as RequestHandler, allowProductCRUD as RequestHandler, ProductController.updateProductById as RequestHandler);
+router.put('/:id', protect as RequestHandler,
+    allowProductCRUD as RequestHandler,
+    ProductController.updateProductById as RequestHandler
+);
 
 // Xóa sản phẩm theo ID
-router.delete('/:id', protect as RequestHandler, allowProductCRUD as RequestHandler, ProductController.deleteProductById as RequestHandler);
+router.delete('/:id', protect as RequestHandler,
+    allowProductCRUD as RequestHandler,
+    ProductController.deleteProductById as RequestHandler
+);
 
 export default router;
