@@ -79,7 +79,7 @@ export function LoginForm({
     // --- Xử lý Đăng nhập bằng Google (OAuth) ---
     const handleGoogleLogin = () => {
         // Chuyển hướng người dùng đến API Google Auth của Backend
-        window.location.href = `${BACKEND_URL}/auth/google`;
+        window.location.href = `${BACKEND_URL}/api/auth/google`;
     };
 
   return (

@@ -39,7 +39,7 @@ router.get(
         
         // Chuyển hướng về Frontend với token
         // Sử dụng biến môi trường (nếu có) để Frontend URL linh hoạt hơn:
-        const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
         // Chuyển hướng thành công
         res.redirect(`${FRONTEND_URL}/auth/success?token=${token}`);
@@ -49,7 +49,7 @@ router.get(
 // Route xử lý thất bại
 router.get('/google/failure', (req, res) => {
     // Chuyển hướng thất bại về Frontend để hiển thị thông báo lỗi
-    const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
     res.redirect(`${FRONTEND_URL}/auth/failure?error=Đăng nhập Google thất bại.`);
 });
 
