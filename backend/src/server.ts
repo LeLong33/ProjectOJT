@@ -16,7 +16,8 @@ app.use(express.json()); // Parse JSON body
 
 // Routes
 app.use('/api/auth', authRoutes);
-// app.use('/api/products', productRoutes);
+app.use('/api/products', productRoutes);  // ⬅ ✔ Thêm Product API
+app.use('/api', authRoutes);
 
 // Start server
 app.listen(PORT, () => {
