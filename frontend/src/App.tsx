@@ -4,6 +4,8 @@ import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
 import { Toaster } from "sonner";
 import AuthSuccessPage from "./pages/AuthSuccess"; 
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import { ProtectedRoute } from "./components/auth/ProtectedRouter";
 
 // ⬅️ CẦN THIẾT: Import AuthProvider
 import { AuthProvider } from "./context/AuthContext";
