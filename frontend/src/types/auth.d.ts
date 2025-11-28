@@ -12,6 +12,7 @@ export interface User {
 export interface LoginCredentials {
   email: string; // Backend dùng email để đăng nhập
   password: string;
+  googleToken?: string; // Thêm googleToken vào đây để hỗ trợ hàm googleLogin gọi api
 }
 
 export interface RegisterData {
@@ -35,4 +36,6 @@ export interface AuthContextType extends AuthState {
   register: (userData: RegisterData) => Promise<boolean>;
   googleLogin: (token: string) => Promise<void>;
   logout: () => void;
+  // --- THÊM DÒNG NÀY ĐỂ SỬA LỖI ---
+  forgotPassword: (email: string) => Promise<boolean>;
 }

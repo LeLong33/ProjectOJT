@@ -3,7 +3,6 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import * as AccountModel from '../models/AccountModel';
 import dotenv from 'dotenv';
-
 dotenv.config();
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;

@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { AuthState, AuthContextType, LoginCredentials, RegisterData, User } from '../types/auth';
+import type { AuthState, AuthContextType, LoginCredentials, RegisterData } from '../types/auth';
 import axiosClient from '../api/axiosClient';
 
 const initialAuthState: AuthState = {
@@ -59,7 +59,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       await axiosClient.post('/auth/register', userData);
       setState(s => ({ ...s, isLoading: false, error: null }));
-      return true; // Trả về true để chuyển trang
+      return true; 
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Lỗi đăng ký';
       setState(s => ({ ...s, isLoading: false, error: msg }));
@@ -71,7 +71,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const googleLogin = async (googleToken: string) => {
     setState(s => ({ ...s, isLoading: true, error: null }));
     try {
-       // Gửi token Google lên backend để xử lý
        const response = await axiosClient.post('/auth/login', { googleToken });
        const { token, user } = response.data;
 
@@ -90,14 +89,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  // --- THÊM MỚI: QUÊN MẬT KHẨU ---
+  const forgotPassword = async (email: string) => {
+    setState(s => ({ ...s, isLoading: true, error: null }));
+    try {
+      // Gọi API quên mật khẩu (Backend cần endpoint này)
+      await axiosClient.post('/auth/forgot-password', { email });
+      
+      setState(s => ({ ...s, isLoading: false, error: null }));
+      return true;
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Không thể gửi yêu cầu quên mật khẩu';
+      setState(s => ({ ...s, isLoading: false, error: msg }));
+      return false;
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     setState(initialAuthState);
   };
 
+  // Đừng quên thêm forgotPassword vào value
   return (
-    <AuthContext.Provider value={{ ...state, login, register, googleLogin, logout }}>
+    <AuthContext.Provider value={{ ...state, login, register, googleLogin, logout, forgotPassword }}>
       {children}
     </AuthContext.Provider>
   );

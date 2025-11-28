@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Search, User, ShoppingCart, ChevronDown, ChevronRight, Cpu, Monitor, Laptop, Headphones, PcCase } from 'lucide-react';
-import { Link } from 'react-router';
+import { Link } from 'react-router-dom';
 
 interface NavbarProps {
   cartCount: number;
@@ -38,12 +38,12 @@ export function Navbar({ cartCount }: NavbarProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo - Made clickable to return to homepage */}
-          <a href="/" className="flex items-center gap-2 flex-none cursor-pointer group">
+          <Link to="/" className="flex items-center gap-2 flex-none cursor-pointer group">
             <div className="w-10 h-10 bg-gradient-to-br from-[#007AFF] to-[#0051D5] rounded-lg flex items-center justify-center shadow-lg transition-transform group-hover:scale-105">
               <Cpu className="w-6 h-6 text-white" />
             </div>
             <span className="text-2xl font-bold tracking-tight text-white transition-colors group-hover:text-[#007AFF]">TechStore</span>
-          </a>
+          </Link>
 
           {/* Categories Dropdown - Main Navigation (Made compact with flex-none) */}
           <div className="flex-none hidden md:flex justify-center">
@@ -130,34 +130,21 @@ export function Navbar({ cartCount }: NavbarProps) {
               <User className="w-6 h-6" />
             </Link>
 
-            <button className="relative p-3 text-gray-400 hover:text-white hover:bg-[#1a1a1a] rounded-xl transition-all shadow-md">
+            {/* Icon Giỏ hàng - Đã chuyển từ button sang Link */}
+            <Link 
+              to="/cart"
+              className="relative p-3 text-gray-400 hover:text-white hover:bg-[#1a1a1a] rounded-xl transition-all shadow-md flex items-center justify-center"
+            >
               <ShoppingCart className="w-6 h-6" />
               {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#007AFF] text-white text-xs font-semibold rounded-full flex items-center justify-center ring-2 ring-[#0a0a0a]">
                   {cartCount}
                 </span>
               )}
-            </button>
+            </Link>
           </div>
         </div>
       </div>
     </nav>
-  );
-}
-
-// Example usage of the Navbar component (for self-containment)
-export default function App() {
-  return (
-    <div className="min-h-screen bg-gray-900 text-white pt-24">
-      <Navbar cartCount={3} />
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-4xl font-extrabold text-[#007AFF] mb-4">Chào mừng đến với TechStore</h1>
-        <p className="text-gray-400">Di chuột lên "Danh Mục Sản Phẩm" để kiểm tra menu dropdown đa cấp mới.</p>
-        <div className="h-[1000px] mt-8 bg-[#1a1a1a] rounded-xl p-6 shadow-xl">
-          {/* Scrollable content to test fixed navbar */}
-          <p className='text-gray-500'>Nội dung trang...</p>
-        </div>
-      </div>
-    </div>
   );
 }

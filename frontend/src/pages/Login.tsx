@@ -10,7 +10,7 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
 
   if (isAuthenticated) {
-    navigate('/categories'); // Chuyển hướng nếu đã login
+    navigate('/categories');
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,6 +30,15 @@ const Login: React.FC = () => {
           <label>Mật khẩu:</label>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </div>
+        
+        {/* --- THÊM LINK QUÊN MẬT KHẨU --- */}
+        <div style={{ textAlign: 'right', marginBottom: '15px', fontSize: '0.9rem' }}>
+            <Link to="/forgot-password" style={{ color: '#007bff', textDecoration: 'none' }}>
+                Quên mật khẩu?
+            </Link>
+        </div>
+        {/* ------------------------------- */}
+
         <button type="submit" disabled={isLoading}>
           {isLoading ? 'Đang xử lý...' : 'Đăng Nhập'}
         </button>
