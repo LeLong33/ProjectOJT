@@ -1,34 +1,63 @@
-// backend/src/routes/ProductRoutes.ts
 import { Router, RequestHandler } from 'express';
+// Import các hàm Controller với tên đã chuẩn hóa
 import * as ProductController from '../controllers/ProductController';
-import { protect } from '../middlewares/authMiddleware';
-import { allowProductCRUD } from '../middlewares/ProductMiddleware';
+// Import các Middleware Auth đã định nghĩa
+import { protect, authorizeRoles } from '../middlewares/authMiddleware'; 
 
 const router = Router();
+
+// Định nghĩa Middleware Stacks (Mảng các Middleware)
+
+// [1] Cần quyền Admin hoặc Staff
+const adminOrStaff = [
+    protect, 
+    authorizeRoles('admin', 'staff')
+] as RequestHandler[];
+
+// [2] Chỉ cần quyền Admin
+const onlyAdmin = [
+    protect, 
+    authorizeRoles('admin')
+] as RequestHandler[];
+
+
+// ---------------------------------------------------------------------
+// 1. PUBLIC ROUTES (GET - Xem Sản phẩm)
+// ---------------------------------------------------------------------
 
 // Lấy tất cả sản phẩm
 router.get('/', ProductController.getAllProducts as RequestHandler);
 
-// Lấy sản phẩm theo ID
-router.get('/:id', ProductController.getProductById as RequestHandler);
+// Lấy sản phẩm theo ID 
+router.get('/:id', ProductController.getProductDetails as RequestHandler);
 
-// ---------------- PROTECTED ROUTES ----------------
-// Tạo sản phẩm mới (chỉ admin hoặc staff)
-router.post('/', protect as RequestHandler,
-    allowProductCRUD as RequestHandler,
+
+// ---------------------------------------------------------------------
+// 2. PROTECTED ROUTES (Admin/Staff)
+// ---------------------------------------------------------------------
+
+/**
+ * [POST] /api/products - Tạo sản phẩm mới
+ */
+router.post('/', 
+    ...adminOrStaff, // ⬅️ Sử dụng mảng Middleware (Đã tối ưu)
     ProductController.createNewProduct as RequestHandler
 );
 
-// Cập nhật sản phẩm theo ID
-router.put('/:id', protect as RequestHandler,
-    allowProductCRUD as RequestHandler,
-    ProductController.updateProductById as RequestHandler
+/**
+ * [PUT] /api/products/:id - Cập nhật sản phẩm
+ */
+router.put('/:id', 
+    ...adminOrStaff, // ADMIN/STAFF
+    ProductController.updateExistingProduct as RequestHandler
 );
 
-// Xóa sản phẩm theo ID
-router.delete('/:id', protect as RequestHandler,
-    allowProductCRUD as RequestHandler,
-    ProductController.deleteProductById as RequestHandler
+/**
+ * [DELETE] /api/products/:id - Xóa sản phẩm (Soft Delete)
+ */
+router.delete('/:id', 
+    ...onlyAdmin, // CHỈ ADMIN
+    ProductController.deleteProduct as RequestHandler
 );
 
 export default router;

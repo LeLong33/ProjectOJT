@@ -5,8 +5,7 @@ import React, {
   useEffect,
   type ReactNode,
 } from "react";
-import jwtDecode from 'jwt-decode';
-// Định nghĩa kiểu cho User Data (Payload JWT)
+import { jwtDecode } from 'jwt-decode';// Định nghĩa kiểu cho User Data (Payload JWT)
 interface UserData {
   id: number;
   role: 'user' | 'staff' | 'admin'; // Role lấy từ Backend
