@@ -1,13 +1,9 @@
-// backend/src/controllers/UserController.ts
 import { Request, Response } from 'express';
 import * as AddressModel from '../models/AddressModel';
 import * as AccountModel from '../models/AccountModel';
 
-// LƯU Ý: req.user được gắn từ authMiddleware (bước tiếp theo sẽ code)
 
-/**
- * [GET] /api/users/profile - Lấy thông tin hồ sơ người dùng
- */
+
 export const getUserProfile = async (req: Request, res: Response) => {
     try {
         // req.user chứa thông tin từ JWT
@@ -17,7 +13,6 @@ export const getUserProfile = async (req: Request, res: Response) => {
             return res.status(401).json({ message: 'Người dùng chưa được xác thực.' });
         }
 
-        // Tùy chọn: Lấy thêm chi tiết từ DB nếu cần (ví dụ: thông tin địa chỉ đầu tiên)
 
         res.status(200).json({ success: true, data: user });
     } catch (error) {
@@ -26,9 +21,7 @@ export const getUserProfile = async (req: Request, res: Response) => {
     }
 };
 
-/**
- * [GET] /api/users/addresses - Lấy tất cả địa chỉ của người dùng
- */
+
 export const getMyAddresses = async (req: Request, res: Response) => {
     try {
         const accountId = req.user!.id; // Dùng dấu '!' vì đã qua protect middleware
