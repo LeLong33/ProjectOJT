@@ -2,9 +2,10 @@ import { ShoppingCart, Star } from 'lucide-react';
 
 interface ProductShowcaseProps {
   onAddToCart: () => void;
+  onNavigate?: (page: string, productId?: number) => void;
 }
 
-export function ProductShowcase({ onAddToCart }: ProductShowcaseProps) {
+export function ProductShowcase({ onAddToCart, onNavigate }: ProductShowcaseProps) {
   const products = [
     {
       id: 1,
@@ -66,7 +67,7 @@ export function ProductShowcase({ onAddToCart }: ProductShowcaseProps) {
       price: 48990000,
       rating: 4.9,
       reviews: 134,
-      image: 'https://tranphong.com.vn/images/pro/1_16942.jpg',
+      image: 'https://images.unsplash.com/photo-1658262548679-776e437f95e5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnYW1pbmclMjBsYXB0b3AlMjB0ZWNofGVufDF8fHx8MTc2NDA0MTcxOXww&ixlib=rb-4.1.0&q=80&w=1080',
       category: 'Laptop',
     },
     {
@@ -93,7 +94,7 @@ export function ProductShowcase({ onAddToCart }: ProductShowcaseProps) {
       price: 6490000,
       rating: 5.0,
       reviews: 256,
-      image: 'https://haloshop.vn/wp-content/uploads/2025/02/ssd_samsung_990_pro_pcie_gen_4_0_x4_nvme_v_nand_m_2_2280_04.jpg',
+      image: 'https://images.unsplash.com/photo-1646153114001-495dfb56506d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjB3b3Jrc3BhY2UlMjB0ZWNofGVufDF8fHx8MTc2Mzk3Mjg5NHww&ixlib=rb-4.1.0&q=80&w=1080',
       category: 'Linh Kiện',
     },
     {
@@ -127,7 +128,7 @@ export function ProductShowcase({ onAddToCart }: ProductShowcaseProps) {
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t border-gray-800">
       {/* Header */}
       <div className="text-center mb-12">
-        <h2 className="text-4xl mb-4">Sản Phẩm Nổi Bật</h2>
+        <h2 className="text-4xl mb-4">Sản Phẩm Công Nghệ</h2>
         <p className="text-gray-400">Khám phá bộ sưu tập sản phẩm công nghệ hàng đầu</p>
       </div>
 
@@ -184,14 +185,22 @@ export function ProductShowcase({ onAddToCart }: ProductShowcaseProps) {
                 </span>
               </div>
 
-              {/* Add to Cart Button */}
-              <button
-                onClick={onAddToCart}
-                className="w-full flex items-center justify-center gap-2 bg-[#007AFF] hover:bg-[#0051D5] py-3 rounded-lg transition-colors"
-              >
-                <ShoppingCart className="w-5 h-5" />
-                Thêm vào giỏ
-              </button>
+              {/* Buttons */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => onNavigate?.('detail', product.id)}
+                  className="flex-1 bg-[#0a0a0a] border border-gray-800 hover:border-[#007AFF] py-3 rounded-lg transition-colors"
+                >
+                  Chi tiết
+                </button>
+                <button
+                  onClick={onAddToCart}
+                  className="flex-1 flex items-center justify-center gap-2 bg-[#007AFF] hover:bg-[#0051D5] py-3 rounded-lg transition-colors"
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                  Giỏ hàng
+                </button>
+              </div>
             </div>
           </div>
         ))}

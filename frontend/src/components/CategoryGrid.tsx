@@ -1,6 +1,10 @@
 import { Laptop, Monitor, Cpu, Headphones } from 'lucide-react';
 
-export function CategoryGrid() {
+interface CategoryGridProps {
+  onNavigate?: (page: string, productId?: number, category?: string) => void;
+}
+
+export function CategoryGrid({ onNavigate }: CategoryGridProps) {
   const categories = [
     {
       icon: <Laptop className="w-12 h-12" />,
@@ -9,6 +13,7 @@ export function CategoryGrid() {
       count: '156+ sản phẩm',
       image: 'https://images.unsplash.com/photo-1658262548679-776e437f95e5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnYW1pbmclMjBsYXB0b3AlMjB0ZWNofGVufDF8fHx8MTc2NDA0MTcxOXww&ixlib=rb-4.1.0&q=80&w=1080',
       color: 'from-blue-500/20 to-purple-500/20',
+      categoryId: 'laptop',
     },
     {
       icon: <Monitor className="w-12 h-12" />,
@@ -17,14 +22,16 @@ export function CategoryGrid() {
       count: '89+ sản phẩm',
       image: 'https://images.unsplash.com/photo-1551459601-c42a28ef7506?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx1bHRyYXdpZGUlMjBtb25pdG9yfGVufDF8fHx8MTc2NDA0MTcxOXww&ixlib=rb-4.1.0&q=80&w=1080',
       color: 'from-cyan-500/20 to-blue-500/20',
+      categoryId: 'monitor',
     },
     {
       icon: <Cpu className="w-12 h-12" />,
-      name: 'PC Gaming',
+      name: 'PC & Linh Kiện',
       description: 'Build PC theo ý muốn',
       count: '243+ sản phẩm',
       image: 'https://images.unsplash.com/photo-1603481588273-2f908a9a7a1b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnYW1pbmclMjBwYyUyMHNldHVwfGVufDF8fHx8MTc2NDAzMzMwM3ww&ixlib=rb-4.1.0&q=80&w=1080',
       color: 'from-purple-500/20 to-pink-500/20',
+      categoryId: 'pc',
     },
     {
       icon: <Headphones className="w-12 h-12" />,
@@ -33,6 +40,7 @@ export function CategoryGrid() {
       count: '412+ sản phẩm',
       image: 'https://images.unsplash.com/photo-1763136469641-372e5cc4e883?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0ZWNoJTIwYWNjZXNzb3JpZXMlMjBrZXlib2FyZHxlbnwxfHx8fDE3NjQwNDE3MTl8MA&ixlib=rb-4.1.0&q=80&w=1080',
       color: 'from-orange-500/20 to-red-500/20',
+      categoryId: 'accessories',
     },
   ];
 
@@ -45,10 +53,10 @@ export function CategoryGrid() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {categories.map((category, index) => (
-          <a
+          <button
             key={index}
-            href="#"
-            className="group relative h-80 rounded-2xl overflow-hidden bg-[#1a1a1a] border border-gray-800 hover:border-[#007AFF] transition-all duration-300"
+            onClick={() => onNavigate?.('list', undefined, category.categoryId)}
+            className="group relative h-80 rounded-2xl overflow-hidden bg-[#1a1a1a] border border-gray-800 hover:border-[#007AFF] transition-all duration-300 w-full text-left"
           >
             {/* Background Image */}
             <div className="absolute inset-0">
@@ -81,7 +89,7 @@ export function CategoryGrid() {
 
             {/* Hover Effect */}
             <div className="absolute inset-0 border-2 border-[#007AFF] opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity pointer-events-none" />
-          </a>
+          </button>
         ))}
       </div>
     </section>

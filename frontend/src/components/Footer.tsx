@@ -79,12 +79,12 @@ export function Footer() {
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-[#007AFF] mt-0.5" />
                 <span className="text-gray-400">
-                  Khu công nghệ cao Hoà Lạc, Thạch Thất, Hà Nội
+                  Khu CNC Hoà Lạc, Thạch Thất, Hà Nội
                 </span>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-[#007AFF]" />
-                <span className="text-gray-400">1900 123456</span>
+                <span className="text-gray-400">1900 1234</span>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-[#007AFF]" />

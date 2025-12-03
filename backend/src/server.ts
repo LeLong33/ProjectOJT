@@ -1,19 +1,20 @@
-// backend/src/server.ts (Phần cập nhật)
 import dotenv from 'dotenv';
-// Load .env ngay lập tức trước khi import bất kỳ module nào dùng env
 dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
-import { checkDbConnection } from './config/database';
+import { checkDbConnection } from './config/database'; 
+
+// Import các định tuyến
 import authRoutes from './routes/AuthRoutes';
+import productRoutes from './routes/ProductRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware cơ bản
 app.use(cors()); 
-app.use(express.json()); // Đọc body JSON từ request
+app.use(express.json());
 
 // Định tuyến chính
 app.get('/', (req, res) => {
@@ -21,11 +22,12 @@ app.get('/', (req, res) => {
 });
 
 // Sử dụng các định tuyến đã tạo
-app.use('/api/auth', authRoutes); // Thêm đường dẫn Auth
+app.use('/api/auth', authRoutes);     
+app.use('/api/products', productRoutes);
 
-// Khởi động server (Hàm checkDbConnection phải được code trong config/db.ts)
+// Khởi động server
 const startServer = async () => {
-    const isConnected = await checkDbConnection(); // Giả định hàm này đã có
+    const isConnected = await checkDbConnection();
     if (!isConnected) {
         console.error('Ứng dụng không thể khởi động nếu không kết nối được DB.');
         return; 
@@ -33,6 +35,7 @@ const startServer = async () => {
 
     app.listen(PORT, () => {
         console.log(`⚡️ Server đang chạy tại http://localhost:${PORT}`);
+        console.log(`Endpoint Sản phẩm sẵn sàng: GET http://localhost:${PORT}/api/products`);
     });
 };
 

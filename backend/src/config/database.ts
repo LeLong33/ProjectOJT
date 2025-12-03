@@ -1,4 +1,7 @@
 import mysql from 'mysql2/promise';
+import dotenv from 'dotenv';
+
+dotenv.config();
 // NOTE: dotenv is loaded in `server.ts` (startup). Avoid re-loading here
 // to prevent incorrect relative path resolution and missing env vars.
 
