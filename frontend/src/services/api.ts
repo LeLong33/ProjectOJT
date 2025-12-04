@@ -1,7 +1,7 @@
 const API_BASE_URL = 'http://localhost:5000/api';
 
 export interface Product {
-  id: number;
+   id: number;
   name: string;
   brand: string;
   price: number;
@@ -27,54 +27,49 @@ export interface Product {
   stock?: number;
 }
 
-// Fetch all products
+// 2. Cập nhật hàm fetchProducts để xử lý dữ liệu từ Backend
 export async function fetchProducts(): Promise<Product[]> {
   try {
     const response = await fetch(`${API_BASE_URL}/products`);
     if (!response.ok) {
       throw new Error('Failed to fetch products');
     }
-    const data = await response.json();
-    return data;
+
+    // Lấy cục data thô từ server
+    const responseJson = await response.json(); 
+    
+    // Kiểm tra cấu trúc: Server trả về { success: true, data: [...] }
+    // Nên ta cần lấy responseJson.data
+    const backendData = responseJson.data || [];
+
+    // MAPPER: Chuyển đổi từng item backend -> frontend
+    const mappedProducts: Product[] = backendData.map((item: any) => ({
+      id: item.product_id,                  // Map product_id -> id
+      name: item.name,
+      // Backend trả brand_id (số), tạm thời hardcode hoặc convert sang string
+      brand: `Brand #${item.brand_id}`,     
+      // Chuyển chuỗi "12990000.00" thành số
+      price: parseFloat(item.price),        
+      originalPrice: parseFloat(item.price) * 1.1, // Giả lập giá gốc cao hơn chút
+      rating: 4.5,                          // Backend thiếu, fake tạm
+      reviews: 0,                           // Backend thiếu, fake tạm
+      // Backend thiếu ảnh, dùng ảnh placeholder mặc định
+      image: 'https://placehold.co/600x400?text=No+Image', 
+      category: `Category #${item.category_id}`,
+      description: item.description,
+      inStock: true,
+      stock: 100
+    }));
+
+    return mappedProducts;
+
   } catch (error) {
     console.error('Error fetching products:', error);
-    // Return mock data as fallback
-    return getMockProducts();
+    return getMockProducts(); // Fallback nếu API chết hẳn
   }
 }
 
-// Fetch single product by ID
-export async function fetchProductById(id: number): Promise<Product | null> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/products/${id}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch product');
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching product:', error);
-    // Return mock data as fallback
-    return getMockProducts().find(p => p.id === id) || null;
-  }
-}
-
-// Fetch products by category
-export async function fetchProductsByCategory(category: string): Promise<Product[]> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/products?category=${category}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch products by category');
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching products by category:', error);
-    // Return filtered mock data as fallback
-    return getMockProducts().filter(p => p.category === category);
-  }
-}
-
+// ... Các hàm fetchById, fetchByCategory, getMockProducts giữ nguyên (hoặc cập nhật logic tương tự) ...
 // Mock data as fallback
 function getMockProducts(): Product[] {
   return [

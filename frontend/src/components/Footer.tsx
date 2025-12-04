@@ -79,7 +79,7 @@ export function Footer() {
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-[#007AFF] mt-0.5" />
                 <span className="text-gray-400">
-                  123 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh
+                  Khu CNC Hoà Lạc, Thạch Thất, Hà Nội
                 </span>
               </div>
               <div className="flex items-center gap-3">

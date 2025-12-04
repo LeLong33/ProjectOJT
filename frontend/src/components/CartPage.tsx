@@ -95,7 +95,7 @@ export function CartPage({ onNavigate, cartCount, onUpdateCart }: CartPageProps)
                         className="w-full h-full object-cover"
                       />
                     </div>
-
+                    
                     {/* Info */}
                     <div className="flex-1">
                       <h3 className="text-xl mb-2">{item.name}</h3>
