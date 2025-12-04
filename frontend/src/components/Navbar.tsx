@@ -6,7 +6,6 @@ import { useCart } from '../contexts/CartContext';
 export function Navbar() {
   const navigate = useNavigate();
   const { cartCount } = useCart();
-  // State để điều khiển việc hiện menu
   const [showCategories, setShowCategories] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
 
@@ -40,7 +39,6 @@ export function Navbar() {
   // Hàm xử lý khi click vào nút danh mục
   const toggleCategories = () => {
     setShowCategories(!showCategories);
-    // Nếu đóng menu thì reset category đang chọn
     if (showCategories) {
       setSelectedCategory(null);
     }
@@ -50,7 +48,6 @@ export function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          {/* Logo - Click về Home */}
           <Link to="/" className="flex items-center gap-2 flex-shrink-0">
             <div className="w-10 h-10 bg-gradient-to-br from-[#007AFF] to-[#0051D5] rounded-lg flex items-center justify-center">
               <Cpu className="w-6 h-6 text-white" />
@@ -58,8 +55,6 @@ export function Navbar() {
             <span className="text-2xl tracking-tight font-bold text-white">TechStore</span>
           </Link>
 
-          {/* Categories Dropdown - Main Navigation */}
-          {/* Đã xóa onMouseEnter/Leave ở div cha, chuyển sang xử lý click ở button */}
           <div className="relative ml-8">
             <button 
               onClick={toggleCategories}
@@ -124,8 +119,6 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Search Bar - Đã mở rộng kích thước */}
-          {/* Thay đổi: max-w-md -> max-w-2xl và thêm flex-grow để chiếm chỗ trống */}
           <div className="hidden md:flex items-center flex-1 max-w-2xl mx-8">
             <div className="relative w-full group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-[#007AFF] transition-colors" />
