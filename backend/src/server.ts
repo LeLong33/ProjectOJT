@@ -1,5 +1,4 @@
 import dotenv from 'dotenv';
-// Load .env trước mọi import khác
 dotenv.config();
 
 import express from 'express';
@@ -49,6 +48,7 @@ const startServer = async () => {
 
     app.listen(PORT, () => {
         console.log(`⚡️ Server đang chạy tại http://localhost:${PORT}`);
+        console.log(`Endpoint Sản phẩm sẵn sàng: GET http://localhost:${PORT}/api/products`);
     });
 };
 

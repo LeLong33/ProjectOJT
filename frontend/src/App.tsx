@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import HomePage from "./pages/HomePage";
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HomePage } from './pages/HomePage';
 import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
 import { Toaster } from "sonner";
@@ -11,8 +11,17 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 // ⬅️ CẦN THIẾT: Import AuthProvider
 import { AuthProvider } from "./context/AuthContext";
 import AuthSuccess from "./pages/AuthSuccess";
+import { CartProvider } from './contexts/CartContext';
+import { ProductListPage } from './pages/ProductListPage';
+import { ProductDetailPage } from './pages/ProductDetailPage';
+import { CartPage } from './pages/CartPage';
+import { CheckoutPage } from './pages/CheckoutPage';
+import { OrderConfirmationPage } from './pages/OrderConfirmationPage';
+import { UserAccountPage } from './pages/UserAccountPage';
+import { LoginPage } from './pages/LoginPage';
+import { AdminPage } from './pages/AdminPage';
 
-function App() {
+export default function App() {
   return (
     <AuthProvider>
       <Toaster richColors/>
@@ -23,6 +32,15 @@ function App() {
           <Route path="/login" element={<SignInPage />}/>
           <Route path="/register" element={<SignUpPage />}/>
           <Route path="/auth/success" element={<AuthSuccess />} /> 
+          <Route path="/products" element={<ProductListPage />} />
+          <Route path="/products/:id" element={<ProductDetailPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+          <Route path="/account" element={<UserAccountPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
           {/* ⬅️ ROUTE ADMIN DASHBOARD */}
             <Route 
                 path="/admin" 
@@ -35,7 +53,6 @@ function App() {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+    
   );
 }
-
-export default App;
