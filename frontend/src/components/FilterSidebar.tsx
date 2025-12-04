@@ -10,11 +10,11 @@ interface FilterSidebarProps {
     storage: string[];
     colors: string[];
   };
-  onFilterChange: (filters: unknown) => void;
+  onFilterChange: (filters: any) => void;
   category: string;
 }
 
-export function FilterSidebar({ filters, onFilterChange }: FilterSidebarProps) {
+export function FilterSidebar({ filters, onFilterChange, category }: FilterSidebarProps) {
   const [expandedSections, setExpandedSections] = useState({
     brands: true,
     price: true,

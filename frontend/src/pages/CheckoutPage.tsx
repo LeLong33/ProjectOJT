@@ -1,35 +1,28 @@
 import { useState } from 'react';
-import { Navbar } from './Navbar';
-import { Footer } from './Footer';
+import { useNavigate, Link } from 'react-router-dom';
+import { Navbar } from '../components/Navbar';
+import { Footer } from '../components/Footer';
 import { Check, CreditCard, Truck, MapPin, Smartphone } from 'lucide-react';
+import { useCart } from '../contexts/CartContext';
 
-interface CheckoutPageProps {
-  onNavigate: (page: string) => void;
-  cartCount: number;
-  isLoggedIn?: boolean;
-}
-
-export function CheckoutPage({ onNavigate, cartCount, isLoggedIn = false }: CheckoutPageProps) {
+export function CheckoutPage() {
+  const navigate = useNavigate();
+  const { cartItems, clearCart } = useCart();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
-    // Shipping Info
-    fullName: isLoggedIn ? 'Nguyễn Văn A' : '',
-    phone: isLoggedIn ? '0901234567' : '',
-    email: isLoggedIn ? 'nguyen.van.a@email.com' : '',
-    address: isLoggedIn ? '123 Nguyễn Huệ' : '',
-    ward: isLoggedIn ? 'Phường Bến Nghé' : '',
-    district: isLoggedIn ? 'Quận 1' : '',
-    city: isLoggedIn ? 'TP. Hồ Chí Minh' : '',
-    // Shipping Method
+    fullName: '',
+    phone: '',
+    email: '',
+    address: '',
+    ward: '',
+    district: '',
+    city: '',
     shippingMethod: 'standard',
-    // Payment Method
     paymentMethod: 'cod',
-    // Card Info
     cardNumber: '',
     cardName: '',
     cardExpiry: '',
     cardCvv: '',
-    // T&C
     agreeTerms: false,
   });
 
@@ -38,23 +31,6 @@ export function CheckoutPage({ onNavigate, cartCount, isLoggedIn = false }: Chec
     { id: 2, name: 'Vận chuyển', icon: <Truck className="w-5 h-5" /> },
     { id: 3, name: 'Thanh toán', icon: <CreditCard className="w-5 h-5" /> },
     { id: 4, name: 'Xác nhận', icon: <Check className="w-5 h-5" /> },
-  ];
-
-  const cartItems = [
-    {
-      id: 1,
-      name: 'Laptop ASUS ROG Strix G16',
-      price: 42990000,
-      quantity: 1,
-      image: 'https://images.unsplash.com/photo-1658262548679-776e437f95e5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnYW1pbmclMjBsYXB0b3AlMjB0ZWNofGVufDF8fHx8MTc2NDA0MTcxOXww&ixlib=rb-4.1.0&q=80&w=1080',
-    },
-    {
-      id: 2,
-      name: 'Chuột Logitech G Pro X',
-      price: 1790000,
-      quantity: 2,
-      image: 'https://images.unsplash.com/photo-1660491083562-d91a64d6ea9c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3aXJlbGVzcyUyMG1vdXNlfGVufDF8fHx8MTc2Mzk2NDI5M3ww&ixlib=rb-4.1.0&q=80&w=1080',
-    },
   ];
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -85,16 +61,13 @@ export function CheckoutPage({ onNavigate, cartCount, isLoggedIn = false }: Chec
       alert('Vui lòng đồng ý với điều khoản và điều kiện');
       return;
     }
-    onNavigate('order-confirmation');
+    clearCart();
+    navigate('/order-confirmation');
   };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <Navbar 
-        cartCount={cartCount} 
-        onNavigateToCart={() => onNavigate('cart')}
-        onNavigateToAccount={() => onNavigate('account')}
-      />
+      <Navbar />
       
       <main className="pt-20 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -139,20 +112,15 @@ export function CheckoutPage({ onNavigate, cartCount, isLoggedIn = false }: Chec
                 {currentStep === 1 && (
                   <div>
                     <h2 className="text-2xl mb-6">Thông Tin Giao Hàng</h2>
-                    {!isLoggedIn && (
-                      <div className="mb-6 p-4 bg-[#007AFF]/10 border border-[#007AFF]/30 rounded-lg">
-                        <p className="text-sm text-gray-300">
-                          Bạn đã có tài khoản?{' '}
-                          <button
-                            onClick={() => onNavigate('login')}
-                            className="text-[#007AFF] hover:underline"
-                          >
-                            Đăng nhập
-                          </button>{' '}
-                          để thanh toán nhanh hơn
-                        </p>
-                      </div>
-                    )}
+                    <div className="mb-6 p-4 bg-[#007AFF]/10 border border-[#007AFF]/30 rounded-lg">
+                      <p className="text-sm text-gray-300">
+                        Bạn đã có tài khoản?{' '}
+                        <Link to="/login" className="text-[#007AFF] hover:underline">
+                          Đăng nhập
+                        </Link>{' '}
+                        để thanh toán nhanh hơn
+                      </p>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="md:col-span-2">
                         <label className="block text-sm text-gray-400 mb-2">Họ và tên *</label>
@@ -328,23 +296,8 @@ export function CheckoutPage({ onNavigate, cartCount, isLoggedIn = false }: Chec
                           <div className="text-sm text-gray-400">Thanh toán qua ví điện tử MoMo</div>
                         </div>
                       </label>
-                      <label className="flex items-center gap-4 p-4 border-2 border-gray-800 rounded-lg cursor-pointer hover:border-[#007AFF] transition-colors">
-                        <input
-                          type="radio"
-                          name="payment"
-                          value="transfer"
-                          checked={formData.paymentMethod === 'transfer'}
-                          onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
-                          className="w-5 h-5"
-                        />
-                        <div className="flex-1">
-                          <div className="font-medium">Chuyển khoản ngân hàng</div>
-                          <div className="text-sm text-gray-400">Chuyển khoản trực tiếp</div>
-                        </div>
-                      </label>
                     </div>
 
-                    {/* Card Details */}
                     {formData.paymentMethod === 'card' && (
                       <div className="pt-6 border-t border-gray-800">
                         <h3 className="text-lg mb-4">Thông Tin Thẻ</h3>
@@ -403,7 +356,6 @@ export function CheckoutPage({ onNavigate, cartCount, isLoggedIn = false }: Chec
                   <div>
                     <h2 className="text-2xl mb-6">Xác Nhận Đơn Hàng</h2>
                     
-                    {/* Shipping Info */}
                     <div className="mb-6 pb-6 border-b border-gray-800">
                       <h3 className="text-lg mb-3">Thông tin giao hàng</h3>
                       <div className="text-gray-400 space-y-1">
@@ -414,7 +366,6 @@ export function CheckoutPage({ onNavigate, cartCount, isLoggedIn = false }: Chec
                       </div>
                     </div>
 
-                    {/* Shipping Method */}
                     <div className="mb-6 pb-6 border-b border-gray-800">
                       <h3 className="text-lg mb-3">Phương thức vận chuyển</h3>
                       <p className="text-gray-400">
@@ -422,18 +373,15 @@ export function CheckoutPage({ onNavigate, cartCount, isLoggedIn = false }: Chec
                       </p>
                     </div>
 
-                    {/* Payment Method */}
                     <div className="mb-6 pb-6 border-b border-gray-800">
                       <h3 className="text-lg mb-3">Phương thức thanh toán</h3>
                       <p className="text-gray-400">
                         {formData.paymentMethod === 'cod' && 'Thanh toán khi nhận hàng (COD)'}
                         {formData.paymentMethod === 'card' && 'Thẻ tín dụng/ghi nợ'}
                         {formData.paymentMethod === 'momo' && 'Ví MoMo'}
-                        {formData.paymentMethod === 'transfer' && 'Chuyển khoản ngân hàng'}
                       </p>
                     </div>
 
-                    {/* Terms & Conditions */}
                     <label className="flex items-start gap-3 cursor-pointer">
                       <input
                         type="checkbox"
@@ -456,7 +404,6 @@ export function CheckoutPage({ onNavigate, cartCount, isLoggedIn = false }: Chec
                   </div>
                 )}
 
-                {/* Navigation Buttons */}
                 <div className="flex gap-4 mt-8 pt-8 border-t border-gray-800">
                   {currentStep > 1 && (
                     <button
@@ -491,7 +438,6 @@ export function CheckoutPage({ onNavigate, cartCount, isLoggedIn = false }: Chec
               <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-6 sticky top-24">
                 <h2 className="text-xl mb-6">Đơn Hàng</h2>
                 
-                {/* Items */}
                 <div className="space-y-4 mb-6 pb-6 border-b border-gray-800">
                   {cartItems.map((item) => (
                     <div key={item.id} className="flex gap-3">
@@ -509,7 +455,6 @@ export function CheckoutPage({ onNavigate, cartCount, isLoggedIn = false }: Chec
                   ))}
                 </div>
 
-                {/* Summary */}
                 <div className="space-y-3">
                   <div className="flex justify-between text-gray-400">
                     <span>Tạm tính</span>
