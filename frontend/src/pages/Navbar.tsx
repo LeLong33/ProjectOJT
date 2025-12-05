@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, User, ShoppingCart, ChevronDown, ChevronRight, Cpu, Laptop, Monitor, PcCase, Headphones, LogOut, Info, UserCircle } from 'lucide-react';
+import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom'; 
 import { useAuth } from '@/context/AuthContext'; 
 
@@ -14,6 +15,152 @@ export function Navbar({ cartCount }: NavbarProps) {
   const [showCategories, setShowCategories] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [showUserDropdown, setShowUserDropdown] = useState(false); 
+  const [categories, setCategories] = useState<Array<{ category_id: number; name: string; parent_id: number | null;}>>([]);
+  const [brands, setBrands] = useState<Array<{ brand_id: number; name: string;}>>([]);
+  const [brandsCache, setBrandsCache] = useState<Record<number, Array<{ brand_id: number; name: string;}>>>({});
+  const [brandsLoading, setBrandsLoading] = useState(false);
+
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+  // Search suggestion state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<Array<{ product_id: number; name: string; price?: number; image_url?: string }>>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchRef = useRef<HTMLDivElement | null>(null);
+  const searchDebounce = useRef<number | null>(null);
+
+  function toggleCategories() {
+    setShowCategories((s) => !s);
+  }
+
+  function getCategoryIcon(name: string) {
+    const n = name.toLowerCase();
+    if (n.includes('lap') || n.includes('notebook')) return <Laptop className="w-5 h-5" />;
+    if (n.includes('màn') || n.includes('screen') || n.includes('monitor')) return <Monitor className="w-5 h-5" />;
+    if (n.includes('pc') || n.includes('linh') || n.includes('phụ')) return <PcCase className="w-5 h-5" />;
+    if (n.includes('phụ') || n.includes('tai') || n.includes('head')) return <Headphones className="w-5 h-5" />;
+    return <Cpu className="w-5 h-5" />;
+  }
+
+  useEffect(() => {
+    // Fetch categories from backend (brands are loaded per-category on hover)
+    const fetchCategories = async () => {
+      try {
+        const catRes = await axios.get(`${API_URL}/categories`);
+        setCategories(catRes.data?.data || []);
+      } catch (err) {
+        console.error('Error loading categories', err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Load brands for a specific main category (called on hover)
+  async function loadBrandsForCategory(categoryId: number | undefined) {
+    if (!categoryId) {
+      setBrands([]);
+      return;
+    }
+
+    // return cached brands if present
+    if (brandsCache[categoryId]) {
+      setBrands(brandsCache[categoryId]);
+      return;
+    }
+
+    try {
+      setBrandsLoading(true);
+      const res = await axios.get(`${API_URL}/brands`, { params: { category_id: categoryId } });
+      const data = res.data?.data || [];
+      setBrands(data);
+      setBrandsCache(prev => ({ ...prev, [categoryId]: data }));
+    } catch (err) {
+      console.error('Error loading brands for category', err);
+      setBrands([]);
+    } finally {
+      setBrandsLoading(false);
+    }
+  }
+
+  function handleHoverMain(index: number, categoryId: number) {
+    setSelectedCategory(index);
+    loadBrandsForCategory(categoryId);
+  }
+
+  // Search: debounced fetch suggestions
+  useEffect(() => {
+    if (!searchQuery || searchQuery.trim().length < 2) {
+      setSuggestions([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    if (searchDebounce.current) window.clearTimeout(searchDebounce.current);
+    searchDebounce.current = window.setTimeout(async () => {
+      try {
+        setSearchLoading(true);
+        const res = await axios.get(`${API_URL}/products`, { params: { q: searchQuery, limit: 6 } });
+        setSuggestions(res.data?.data || []);
+      } catch (err) {
+        console.error('Search suggestion error', err);
+        setSuggestions([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      if (searchDebounce.current) window.clearTimeout(searchDebounce.current);
+    };
+  }, [searchQuery]);
+
+  // Click outside to close suggestions
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setSuggestions([]);
+      }
+    }
+    document.addEventListener('click', onDocClick);
+    return () => document.removeEventListener('click', onDocClick);
+  }, []);
+
+  // Determine four main categories (Laptop, PC, Màn hình, Phụ kiện)
+  const mainCategories = (() => {
+    if (!categories || categories.length === 0) return [] as typeof categories;
+
+    const byName = (n: string) => (s: string) => s.toLowerCase().includes(n);
+
+    const find = (pred: (s: string) => boolean) => categories.find(c => pred(String(c.name)));
+
+    const laptop = find(byName('lap'));
+    const pc = find(byName('pc')) || find(byName('máy tính')) || find(byName('desktop'));
+    const monitor = find((s) => s.toLowerCase().includes('màn') || s.toLowerCase().includes('man') || s.toLowerCase().includes('screen') || s.toLowerCase().includes('monitor'));
+    const accessories = find((s) => s.toLowerCase().includes('phụ') || s.toLowerCase().includes('phu') || s.toLowerCase().includes('phụ kiện') || s.toLowerCase().includes('accessories'));
+
+    const picked = [laptop, pc, monitor, accessories].filter(Boolean) as typeof categories;
+
+    // If any main category not found, fill with top-level categories (parent_id === null)
+    if (picked.length < 4) {
+      const topLevel = categories.filter(c => c.parent_id === null && !picked.some(p => p.category_id === c.category_id));
+      for (const t of topLevel) {
+        if (picked.length >= 4) break;
+        picked.push(t);
+      }
+    }
+
+    return picked.slice(0, 4);
+  })();
+
+  // When dropdown opens, ensure we have a selected main category and load its brands
+  useEffect(() => {
+    if (showCategories && mainCategories.length > 0) {
+      const idx = selectedCategory ?? 0;
+      setSelectedCategory(idx);
+      const catId = mainCategories[idx]?.category_id;
+      if (catId) loadBrandsForCategory(catId);
+    }
+  }, [showCategories, mainCategories]);
 
   // Logic Đăng xuất ĐÃ SỬA
   const handleLogout = () => {
@@ -22,12 +169,7 @@ export function Navbar({ cartCount }: NavbarProps) {
     navigate('/'); // ⬅️ CHUYỂN HƯỚNG VỀ TRANG CHỦ
   };
 
-  const categories = [ /* Giữ nguyên Categories data */
-    { icon: <Laptop className="w-5 h-5" />, name: 'Laptop', brands: ['ASUS', 'MSI', 'Dell', 'HP', 'Lenovo', 'Acer', 'Apple'] },
-    { icon: <Monitor className="w-5 h-5" />, name: 'Màn Hình', brands: ['Samsung', 'LG', 'Dell', 'ASUS', 'ViewSonic', 'BenQ'] },
-    { icon: <PcCase className="w-5 h-5" />, name: 'PC & Linh Kiện', brands: ['Intel', 'Predator', 'NVIDIA', 'Corsair', 'MSI'] },
-    { icon: <Headphones className="w-5 h-5" />, name: 'Phụ Kiện', brands: ['Logitech', 'Razer', 'SteelSeries', 'Corsair', 'HyperX', 'Keychron'] },
-  ];
+  // categories state loaded from backend
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-gray-800 text-white font-inter">
@@ -45,55 +187,134 @@ export function Navbar({ cartCount }: NavbarProps) {
           {/* Categories Dropdown & Search Bar (Giữ nguyên) */}
           {/* ... (Code Categories Dropdown và Search Bar ở đây) ... */}
            {/* Categories Dropdown */}
-          <div className="flex-none hidden md:flex justify-center">
-            <div
-              className="relative pb-4"
-              onMouseEnter={() => setShowCategories(true)}
-              onMouseLeave={() => {
-                setShowCategories(false);
-                setSelectedCategory(null);
-              }}
+          <div className="relative ml-8">
+            <button 
+              onClick={toggleCategories}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                showCategories ? 'bg-[#1a1a1a] text-white' : 'text-gray-300 hover:text-white hover:bg-[#1a1a1a]'
+              }`}
             >
-              <button className="flex items-center gap-2 px-4 py-3 text-gray-300 hover:text-white transition-colors bg-[#1a1a1a] rounded-lg hover:bg-gray-800 mt-4">
-                <span className="text-base font-medium">Danh Mục Sản Phẩm</span>
-                <ChevronDown className="w-4 h-4" />
-              </button>
-              {showCategories && (
-                 <div className="absolute top-full left-0 mt-1 flex bg-[#1a1a1a] border border-gray-700 rounded-xl shadow-2xl overflow-hidden min-w-[500px]">
-                    {/* ... Categories List & Brands List ... */}
-                     <div className="w-64 py-2">
-                        {categories.map((category, index) => (
-                           <div key={index} onMouseEnter={() => setSelectedCategory(index)} className={`flex items-center justify-between gap-3 px-4 py-2 cursor-pointer transition-all mx-2 rounded-lg ${selectedCategory === index ? 'bg-[#007AFF]/20 text-[#007AFF]' : 'hover:bg-[#007AFF]/5 text-gray-300'}`}>
-                              <div className="flex items-center gap-3"><div className={`transition-colors ${selectedCategory === index ? 'text-[#007AFF]' : 'text-gray-400'}`}>{category.icon}</div><span className="font-medium">{category.name}</span></div>
-                              <ChevronRight className={`w-4 h-4 transition-colors ${selectedCategory === index ? 'text-[#007AFF]' : 'text-gray-500'}`} />
-                           </div>
-                        ))}
-                     </div>
-                     {selectedCategory !== null && (
-                         <div className="w-56 bg-[#141414] border-l border-gray-800 p-4 transition-all duration-300">
-                             <div className="text-sm font-semibold text-[#007AFF] mb-3 border-b border-gray-700 pb-2">Thương Hiệu Phổ Biến</div>
-                             <div className="space-y-1">
-                                 {categories[selectedCategory].brands.map((brand, idx) => (
-                                     <Link key={idx} to={`/brand/${brand.toLowerCase()}`} className="block px-3 py-1.5 text-gray-400 text-sm hover:text-white hover:bg-[#007AFF]/10 rounded transition-colors">
-                                         {brand}
-                                     </Link>
-                                 ))}
-                             </div>
-                         </div>
-                     )}
-                 </div>
-              )}
-            </div>
+              <span className="text-lg font-medium">Danh Mục</span>
+              <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${showCategories ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {showCategories && (
+              <div className="absolute top-full left-0 mt-2 flex bg-[#1a1a1a] border border-gray-800 rounded-lg shadow-2xl overflow-hidden z-50">
+                {/* Left: main categories */}
+                <div className="w-64 bg-[#1a1a1a]">
+                  {mainCategories.map((category, index) => (
+                    <Link
+                      key={category.category_id}
+                      to={`/products?category=${category.category_id}`}
+                      onMouseEnter={() => handleHoverMain(index, category.category_id)}
+                      className={`flex items-center justify-between gap-3 px-4 py-3 cursor-pointer transition-all ${
+                        selectedCategory === index 
+                          ? 'bg-[#007AFF]/10 border-l-4 border-l-[#007AFF]' 
+                          : 'hover:bg-[#007AFF]/5 border-l-4 border-transparent'
+                      }`}
+                      onClick={() => setShowCategories(false)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`transition-colors ${
+                          selectedCategory === index ? 'text-[#007AFF]' : 'text-gray-400'
+                        }`}>
+                          {getCategoryIcon(category.name)}
+                        </div>
+                        <span className="text-white">{category.name}</span>
+                      </div>
+                      <ChevronRight className={`w-4 h-4 transition-colors ${
+                        selectedCategory === index ? 'text-[#007AFF]' : 'text-gray-500'
+                      }`} />
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Middle: subcategories for hovered main category */}
+                <div className="w-56 bg-[#141414] border-l border-gray-800 p-4 animate-in fade-in slide-in-from-left-2 duration-200">
+                  <div className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">Danh Mục Con</div>
+                  <div className="space-y-1 mb-3">
+                    {selectedCategory !== null ? (
+                      (() => {
+                        const parentId = mainCategories[selectedCategory]?.category_id;
+                        const subs = categories.filter(c => c.parent_id === parentId);
+                        if (subs.length === 0) return <div className="text-sm text-gray-500">Không có danh mục con</div>;
+                        return subs.map(sc => (
+                          <Link
+                            key={sc.category_id}
+                            to={`/products?category=${parentId}&subcategory=${sc.category_id}`}
+                            onClick={() => setShowCategories(false)}
+                            className="block px-3 py-2 text-gray-300 hover:text-white hover:bg-[#007AFF]/10 rounded transition-colors"
+                          >
+                            {sc.name}
+                          </Link>
+                        ));
+                      })()
+                    ) : (
+                      <div className="text-sm text-gray-500">Di chuột vào danh mục để xem chi tiết</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right: brands list */}
+                <div className="w-56 bg-[#141414] border-l border-gray-800 p-4 animate-in fade-in slide-in-from-left-2 duration-200">
+                  <div className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">Thương Hiệu</div>
+                  <div className="space-y-1">
+                    {brandsLoading ? (
+                      <div className="text-sm text-gray-400">Đang tải thương hiệu...</div>
+                    ) : brands.length > 0 ? (
+                      brands.map((brandItem) => (
+                        <Link
+                          key={brandItem.brand_id}
+                          to={`/products?category=${mainCategories[selectedCategory ?? 0]?.category_id}&brand=${encodeURIComponent(brandItem.name)}`}
+                          onClick={() => setShowCategories(false)}
+                          className="block px-3 py-2 text-gray-300 hover:text-white hover:bg-[#007AFF]/10 rounded transition-colors"
+                        >
+                          {brandItem.name}
+                        </Link>
+                      ))
+                    ) : (
+                      <div className="text-sm text-gray-500">Không có thương hiệu</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+
           {/* Search Bar */}
           <div className="hidden md:flex items-center flex-1 max-w-2xl mx-12">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm sản phẩm, thương hiệu hoặc mã..."
-                className="w-full bg-[#1a1a1a] border border-gray-700 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-all duration-200 shadow-inner"
-              />
+              <div ref={searchRef} className="relative">
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  type="text"
+                  placeholder="Tìm kiếm sản phẩm, thương hiệu hoặc mã..."
+                  className="w-full bg-[#1a1a1a] border border-gray-700 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-all duration-200 shadow-inner"
+                  onFocus={() => { if (searchQuery.trim().length >= 2 && suggestions.length === 0) {/* trigger search via effect */} }}
+                />
+
+                {/* Suggestions dropdown */}
+                {suggestions.length > 0 && (
+                  <div className="absolute left-0 top-full mt-2 w-full bg-[#0b0b0b] border border-gray-800 rounded-lg shadow-xl z-50">
+                    {suggestions.map(s => (
+                      <Link
+                        key={s.product_id}
+                        to={`/product/${s.product_id}`}
+                        onClick={() => setSuggestions([])}
+                        className="flex items-center gap-3 px-3 py-2 hover:bg-[#111111]"
+                      >
+                        <img src={s.image_url || 'https://via.placeholder.com/48'} alt={s.name} className="w-10 h-10 object-cover rounded" />
+                        <div className="text-sm">
+                          <div className="text-white">{s.name}</div>
+                          {s.price != null && <div className="text-xs text-gray-400">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(s.price)}</div>}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

@@ -3,9 +3,9 @@ import HomePage from "./pages/HomePage";
 import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
 import { Toaster } from "sonner";
-import AuthSuccessPage from "./pages/AuthSuccess"; 
 import { ProtectedRoute } from  "./components/auth/ProtectedRouter";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import ProductDetail from "./pages/products/ProductDetail";
 
 
 // ⬅️ CẦN THIẾT: Import AuthProvider
@@ -20,6 +20,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/login" element={<SignInPage />}/>
           <Route path="/register" element={<SignUpPage />}/>
           <Route path="/auth/success" element={<AuthSuccess />} /> 

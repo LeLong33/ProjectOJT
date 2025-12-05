@@ -10,6 +10,12 @@ import * as BrandModel from '../models/BrandModel';
  */
 export const getBrands = async (req: Request, res: Response) => {
     try {
+        const categoryId = req.query.category_id ? parseInt(String(req.query.category_id)) : undefined;
+        if (categoryId && !isNaN(categoryId)) {
+            const brands = await BrandModel.findBrandsByCategory(categoryId);
+            return res.status(200).json({ success: true, data: brands });
+        }
+
         const brands = await BrandModel.findAllBrands();
         return res.status(200).json({ success: true, data: brands });
     } catch (error) {
