@@ -11,13 +11,18 @@ import { Input } from "@/components/ui/input"
 import { Eye, EyeOff } from 'lucide-react'; 
 import { useState, type FormEvent } from 'react';
 import axios from 'axios'; 
+// ⬅️ CẦN THIẾT: Import hooks và thư viện
+import { useNavigate } from 'react-router-dom'; 
+import { jwtDecode } from 'jwt-decode';
+import { useAuth } from '@/context/AuthContext'; 
+
 
 // Lấy URL API từ biến môi trường
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 // Lấy URL Backend gốc (để gọi Google Auth)
 const BACKEND_URL = API_URL.replace('/api', ''); 
 
-// Biểu tượng Google SVG
+// Biểu tượng Google SVG (Giữ nguyên)
 const GoogleIcon = () => (
     <svg 
         xmlns="http://www.w3.org/2000/svg" 
@@ -43,6 +48,9 @@ export function LoginForm({
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    
+    const navigate = useNavigate();
+    const { login } = useAuth(); // Lấy hàm login từ Context
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -56,13 +64,24 @@ export function LoginForm({
 
         try {
             const response = await axios.post(`${API_URL}/auth/login`, formData);
-
-            if (response.data.success && response.data.token) {
-                // 1. Lưu Token vào LocalStorage
-                localStorage.setItem('token', response.data.token);
+            const token = response.data.token;
+            
+            if (response.data.success && token) {
+                // 1. Lưu token và cập nhật AuthContext
+                login(token); 
                 
-                // 2. Chuyển hướng về trang chủ
-                window.location.href = '/'; 
+                // 2. Giải mã token để lấy Role
+                // Đảm bảo token có chứa thuộc tính 'role' từ Backend
+                const decoded = jwtDecode(token) as { role: 'user' | 'staff' | 'admin' };
+                
+                // 3. Định nghĩa đường dẫn chuyển hướng DỰA TRÊN ROLE
+                let redirectPath = '/';
+                if (decoded.role === 'admin' || decoded.role === 'staff') {
+                    redirectPath = '/admin'; // ⬅️ Chuyển đến trang Admin
+                }
+
+                // 4. Chuyển hướng bằng navigate (cách chuẩn trong React Router)
+                navigate(redirectPath, { replace: true });
             }
         } catch (err) {
             console.error('Lỗi Đăng nhập:', err);
@@ -193,6 +212,3 @@ export function LoginForm({
     </div>
   )
 }
-
-// LƯU Ý: Bạn cần tạo một component xử lý redirect sau Google OAuth (ví dụ: src/pages/auth/AuthSuccess.tsx)
-// để đọc token từ URL và lưu vào LocalStorage.
