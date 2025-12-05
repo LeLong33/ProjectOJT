@@ -86,4 +86,45 @@ export const updateMyAddress = async (req: Request, res: Response) => {
         console.error(`Lỗi khi cập nhật địa chỉ ID ${addressId}:`, error);
         res.status(500).json({ success: false, message: 'Lỗi máy chủ nội bộ.' });
     }
+
+    
+};
+
+export const getAllAccounts = async (req: Request, res: Response) => {
+    try {
+        const accounts = await AccountModel.findAllAccounts();
+        res.status(200).json({ success: true, data: accounts });
+    } catch (error) {
+        console.error('Lỗi khi lấy danh sách tài khoản:', error);
+        res.status(500).json({ success: false, message: 'Lỗi server nội bộ.' });
+    }
+};
+
+// ⬅️ THÊM: Admin Cập nhật Role người dùng
+export const updateAccountRole = async (req: Request, res: Response) => {
+    const targetAccountId = parseInt(req.params.id);
+    const { role: newRole } = req.body;
+    
+    // Ngăn Admin tự giáng cấp/nâng cấp bản thân
+    if (targetAccountId === req.user?.id) {
+        return res.status(400).json({ success: false, message: 'Bạn không thể thay đổi vai trò của tài khoản của chính mình.' });
+    }
+    
+    // Kiểm tra tính hợp lệ của role
+    if (!['user', 'staff', 'admin'].includes(newRole)) {
+        return res.status(400).json({ success: false, message: 'Vai trò không hợp lệ.' });
+    }
+
+    try {
+        const affectedRows = await AccountModel.updateAccountRole(targetAccountId, newRole);
+
+        if (affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản để cập nhật.' });
+        }
+
+        res.status(200).json({ success: true, message: `Vai trò của user ID ${targetAccountId} đã được cập nhật thành ${newRole}.` });
+    } catch (error) {
+        console.error('Lỗi khi cập nhật vai trò:', error);
+        res.status(500).json({ success: false, message: 'Lỗi server nội bộ.' });
+    }
 };

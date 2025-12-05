@@ -44,7 +44,7 @@ export interface CreateProductData {
 // ---------------------------------------------------------------------
 
 /**
- * Lấy tất cả sản phẩm đang hoạt động (kèm ảnh chính)
+ * Lấy tất cả sản phẩm đang hoạt động (kèm ảnh chính và thông số kỹ thuật)
  */
 export async function findAllActiveProducts(): Promise<Product[]> {
     const query = `
@@ -57,10 +57,20 @@ export async function findAllActiveProducts(): Promise<Product[]> {
             p.short_description, 
             p.rating, 
             p.numReviews,
-            pi.url AS image_url -- ⬅️ Lấy URL ảnh chính
+            p.brand_id,
+            p.category_id,
+            pi.url AS image_url,
+            pd.CPU,
+            pd.RAM,
+            pd.Storage,
+            pd.GPU,
+            pd.Display,
+            pd.OS
         FROM products p
         LEFT JOIN productImages pi 
-            ON p.product_id = pi.product_id AND pi.is_main = TRUE -- ⬅️ CHỈ JOIN VỚI ẢNH CHÍNH
+            ON p.product_id = pi.product_id AND pi.is_main = TRUE
+        LEFT JOIN productDetails pd
+            ON p.product_id = pd.product_id
         WHERE p.is_active = 1
         ORDER BY p.createdAt DESC
     `;

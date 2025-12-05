@@ -6,6 +6,8 @@ import { Toaster } from "sonner";
 import { ProtectedRoute } from  "./components/auth/ProtectedRouter";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ProductDetail from "./pages/products/ProductDetail";
+import CartPage from "./pages/cart/CartPage";
+import ProductList from "./pages/ProductList";
 
 
 // ⬅️ CẦN THIẾT: Import AuthProvider
@@ -20,6 +22,8 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/products" element={<ProductList />} />
+          <Route path="/cart" element={<CartPage />} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/login" element={<SignInPage />}/>
           <Route path="/register" element={<SignUpPage />}/>

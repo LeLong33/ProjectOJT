@@ -92,3 +92,15 @@ export async function findOrCreateGoogleUser(email: string, name: string): Promi
     
     return account;
 }
+export async function findAllAccounts(): Promise<Account[]> {
+    const query = 'SELECT account_id, name, email, phone_number, role FROM accounts ORDER BY account_id ASC';
+    const [rows] = await db.query<Account[]>(query);
+    return rows;
+}
+
+// ⬅️ THÊM: Cập nhật vai trò (Chỉ Admin)
+export async function updateAccountRole(accountId: number, newRole: Account['role']): Promise<number> {
+    const query = 'UPDATE accounts SET role = ? WHERE account_id = ?';
+    const [result] = await db.execute(query, [newRole, accountId]);
+    return (result as ResultSetHeader).affectedRows;
+}

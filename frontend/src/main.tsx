@@ -1,17 +1,19 @@
 import React from 'react'
-import ReactDOM from 'react-dom/client'
-import { createRoot } from "react-dom/client";
-import App from "./App.tsx";
-import "./index.css";
-import { GoogleOAuthProvider } from '@react-oauth/google';
+import { createRoot } from 'react-dom/client'
+import App from './App.tsx'
+import './index.css'
+import { GoogleOAuthProvider } from '@react-oauth/google'
+import { CartProvider } from './context/CartContext'
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+const container = document.getElementById('root')!
+const root = createRoot(container)
+
+root.render(
   <React.StrictMode>
-    {/* 2. Bọc App bên trong Provider và điền Client ID */}
-    <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID_HERE">
-      <App />
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID_HERE'}>
+      <CartProvider>
+        <App />
+      </CartProvider>
     </GoogleOAuthProvider>
-  </React.StrictMode>,
+  </React.StrictMode>
 )
-
-createRoot(document.getElementById("root")!).render(<App />);
