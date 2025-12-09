@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { Navbar } from '@/pages/Navbar'
 import { Footer } from '@/pages/Footer'
 import { useCart } from '@/context/CartContext'
-import { ShoppingCart, ChevronDown } from 'lucide-react'
+import { ShoppingCart } from 'lucide-react'
+import { FilterSidebar } from './FilterSidebar'
 import { SlimHeroCarousel } from './SlimCarousel'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
@@ -21,6 +22,8 @@ interface Product {
   CPU?: string
   RAM?: string
   Storage?: string
+  Brand?: string
+  Color?: string
 }
 
 interface Category {
@@ -29,10 +32,7 @@ interface Category {
   parent_id: number | null
 }
 
-interface Brand {
-  brand_id: number
-  name: string
-}
+// category interface not used in this page
 
 // ==================== UTILS ====================
 function formatPrice(price?: number) {
@@ -40,7 +40,7 @@ function formatPrice(price?: number) {
   try {
     const s = Math.round(price).toLocaleString('vi-VN')
     return `${s} đ`
-  } catch (e) {
+  } catch {
     return String(price) + ' đ'
   }
 }
@@ -53,6 +53,30 @@ function normalizePriceValue(p?: number): number | undefined {
   return p
 }
 
+function slugify(s: string) {
+  // Remove accents from Vietnamese characters
+  const map: Record<string, string> = {
+    'à': 'a', 'á': 'a', 'ạ': 'a', 'ả': 'a', 'ã': 'a',
+    'ă': 'a', 'ằ': 'a', 'ắ': 'a', 'ặ': 'a', 'ẳ': 'a', 'ẵ': 'a',
+    'â': 'a', 'ầ': 'a', 'ấ': 'a', 'ậ': 'a', 'ẩ': 'a', 'ẫ': 'a',
+    'è': 'e', 'é': 'e', 'ẹ': 'e', 'ẻ': 'e', 'ẽ': 'e',
+    'ê': 'e', 'ề': 'e', 'ế': 'e', 'ệ': 'e', 'ể': 'e', 'ễ': 'e',
+    'ì': 'i', 'í': 'i', 'ị': 'i', 'ỉ': 'i', 'ĩ': 'i',
+    'ò': 'o', 'ó': 'o', 'ọ': 'o', 'ỏ': 'o', 'õ': 'o',
+    'ô': 'o', 'ồ': 'o', 'ố': 'o', 'ộ': 'o', 'ổ': 'o', 'ỗ': 'o',
+    'ơ': 'o', 'ờ': 'o', 'ớ': 'o', 'ợ': 'o', 'ở': 'o', 'ỡ': 'o',
+    'ù': 'u', 'ú': 'u', 'ụ': 'u', 'ủ': 'u', 'ũ': 'u',
+    'ư': 'u', 'ừ': 'u', 'ứ': 'u', 'ự': 'u', 'ử': 'u', 'ữ': 'u',
+    'ỳ': 'y', 'ý': 'y', 'ỵ': 'y', 'ỷ': 'y', 'ỹ': 'y',
+    'đ': 'd',
+  }
+  let str = String(s || '').toLowerCase().trim()
+  for (const [k, v] of Object.entries(map)) {
+    str = str.replace(new RegExp(k, 'g'), v)
+  }
+  return str.replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '')
+}
+
 // ==================== PRODUCTLIST COMPONENT ====================
 export default function ProductList() {
   const { addToCart, cartCount } = useCart()
@@ -61,149 +85,206 @@ export default function ProductList() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [categories, setCategories] = useState<Category[]>([])
-  const [brands, setBrands] = useState<Brand[]>([])
+  
 
   // Filter state
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
-  const [selectedBrands, setSelectedBrands] = useState<number[]>([])
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100_000_000])
-  const [selectedRAM, setSelectedRAM] = useState<string[]>([])
-  const [selectedStorage, setSelectedStorage] = useState<string[]>([])
-  const [selectedCPU, setSelectedCPU] = useState<string[]>([])
   const [sortBy, setSortBy] = useState<'newest' | 'price-asc' | 'price-desc' | 'rating'>('newest')
-  const [expandedFilters, setExpandedFilters] = useState<Record<string, boolean>>({
-    sort: false,
-    category: true,
-    brand: true,
-    price: true,
-    ram: true,
-    storage: true,
-    cpu: true,
+  const [filters, setFilters] = useState({
+    brands: [] as string[],
+    priceRange: [0, 100_000_000] as [number, number],
+    cpu: [] as string[],
+    ram: [] as string[],
+    storage: [] as string[],
+    colors: [] as string[],
   })
-
-  // State to hold raw products returned from API (before client-side spec filters)
-  const [rawProducts, setRawProducts] = useState<Product[]>([])
-
-  // Extract unique spec values from raw products (these reflect the selected category)
-  const uniqueRAM = Array.from(new Set(rawProducts.map(p => p.RAM).filter(Boolean)))
-  const uniqueStorage = Array.from(new Set(rawProducts.map(p => p.Storage).filter(Boolean)))
-  const uniqueCPU = Array.from(new Set(rawProducts.map(p => p.CPU).filter(Boolean)))
-
-  // Child category selection (filter by subcategory)
-  const [selectedChildCategory, setSelectedChildCategory] = useState<number | null>(null)
 
   // Read `category` query param from URL (Navbar links may set `?category=...`)
   const [searchParams] = useSearchParams()
 
+  // (categories fetching removed — not used in this view)
+
   // ===== Fetch Categories =====
   useEffect(() => {
+    let mounted = true
     axios.get(`${API_URL}/categories`)
       .then(res => {
         const cats = res.data?.data || res.data || []
-        setCategories(cats)
+        if (mounted) setCategories(cats)
       })
-      .catch(e => console.error('Error fetching categories:', e))
+      .catch(() => {
+        console.error('Error fetching categories')
+      })
+    return () => { mounted = false }
   }, [])
 
-  // ===== Fetch Brands (when category changes) =====
+  // Map `category` query param (slug or name) -> category_id so backend can filter by id
   useEffect(() => {
-    if (selectedCategory) {
-      axios.get(`${API_URL}/brands?category_id=${selectedCategory}`)
-        .then(res => {
-          const brandsData = res.data?.data || res.data || []
-          setBrands(brandsData)
-        })
-        .catch(e => console.error('Error fetching brands:', e))
-    } else {
-      axios.get(`${API_URL}/brands`)
-        .then(res => {
-          const brandsData = res.data?.data || res.data || []
-          setBrands(brandsData)
-        })
-        .catch(e => console.error('Error fetching brands:', e))
+    const catParam = searchParams.get('category')
+    if (!catParam) {
+      setSelectedCategory(null)
+      return
     }
-  }, [selectedCategory])
+    if (categories.length === 0) {
+      console.warn('Categories not loaded yet, skipping category mapping')
+      return
+    }
+    
+    const trimmed = catParam.trim()
+    // If category param is numeric id, use it directly
+    const asNum = Number(trimmed)
+    if (!Number.isNaN(asNum) && Number.isInteger(asNum)) {
+      setSelectedCategory(asNum)
+      return
+    }
+    
+    // Try to match by slugified category name OR by name directly
+    const paramSlug = trimmed.toLowerCase()
+    console.log('Mapping category param:', paramSlug)
+    console.log('Available categories:', categories.map(c => ({ 
+      id: c.category_id,
+      name: c.name, 
+      slug: slugify(c.name || ''),
+      parent_id: c.parent_id
+    })))
+    
+    let matched = categories.find(c => {
+      const categorySlug = slugify(c.name || '')
+      const matches = categorySlug === paramSlug
+      if (matches) console.log(`✓ Slug matched: "${c.name}" (${c.category_id}) -> ${categorySlug}`)
+      return matches
+    })
+    
+    // Fallback: try exact name match
+    if (!matched) {
+      matched = categories.find(c => (c.name || '').toLowerCase() === paramSlug)
+      if (matched) console.log(`✓ Name matched: "${matched.name}" (${matched.category_id})`)
+    }
+    
+    // Fallback: try substring match
+    if (!matched) {
+      matched = categories.find(c => {
+        const catName = (c.name || '').toLowerCase()
+        return catName.includes(paramSlug) || paramSlug.includes(catName)
+      })
+      if (matched) console.log(`✓ Substring matched: "${matched.name}" (${matched.category_id})`)
+    }
+    
+    if (matched) {
+      console.log('Setting selectedCategory to:', matched.category_id)
+      setSelectedCategory(matched.category_id)
+    } else {
+      console.warn('✗ No category matched for:', paramSlug)
+    }
+  }, [searchParams, categories])
+
+  // ===== Fetch Brands (when category changes) =====
+  // Brands fetching can be added back if needed from FilterSidebar
 
   // ===== Fetch Products (with filters) =====
   const fetchProducts = useCallback(async () => {
     setLoading(true)
     try {
       let query = `${API_URL}/products?`
-
-      // Apply filters - prefer child category if selected
+      // Apply filters
       const params: string[] = []
-      const categoryForQuery = selectedChildCategory || selectedCategory
-      if (categoryForQuery) {
-        params.push(`category_id=${categoryForQuery}`)
+      if (selectedCategory) {
+        params.push(`category_id=${selectedCategory}`)
       }
-      if (selectedBrands.length > 0) {
-        params.push(`brand_id=${selectedBrands.join(',')}`)
+      if (filters.priceRange) {
+        params.push(`price_min=${filters.priceRange[0]}`)
+        params.push(`price_max=${filters.priceRange[1]}`)
       }
-      if (priceRange) {
-        params.push(`price_min=${priceRange[0]}`)
-        params.push(`price_max=${priceRange[1]}`)
-      }
-
       query += params.join('&')
-
+      console.log('Fetching products with query:', query)
       const res = await axios.get(query)
-      let data = res.data?.data || res.data || []
-
+      const data = res.data?.data || res.data || []
+      console.log('Fetched products count:', data.length)
       // Normalize prices and set raw products (before spec filtering)
-      data = data.map((p: any) => ({
+      const normalizedData = data.map((p: Product) => ({
         ...p,
         price: normalizePriceValue(p.price) || p.price,
       }))
-
-      setRawProducts(data)
-
-      // Client-side filter by specs (use selected spec filters)
-      let filtered = data.filter((p: any) => {
-        if (selectedRAM.length > 0 && !selectedRAM.includes(p.RAM)) return false
-        if (selectedStorage.length > 0 && !selectedStorage.includes(p.Storage)) return false
-        if (selectedCPU.length > 0 && !selectedCPU.includes(p.CPU)) return false
-        return true
-      })
-
-      // Sort
-      if (sortBy === 'price-asc') {
-        filtered.sort((a: any, b: any) => (a.price || 0) - (b.price || 0))
-      } else if (sortBy === 'price-desc') {
-        filtered.sort((a: any, b: any) => (b.price || 0) - (a.price || 0))
-      } else if (sortBy === 'rating') {
-        filtered.sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0))
+      // helper to safely read string fields from product
+      const getStringField = (obj: unknown, key: string) => {
+        const r = obj as unknown as Record<string, unknown>
+        const v = r[key]
+        return typeof v === 'string' ? v : ''
       }
 
+      const normalizeForMatch = (s?: string) =>
+        String(s || '').toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '')
+
+      const categoryParam = searchParams.get('category')
+
+      // Client-side filter by all specs and brand/color
+      const filtered = normalizedData.filter((p: Product) => {
+        // If category query param provided from navbar, try to match product name
+        if (categoryParam) {
+          const cat = String(categoryParam).toLowerCase()
+          const nameLower = (p.name || '').toLowerCase()
+          if (!nameLower.includes(cat)) return false
+        }
+        // Brand filter
+        if (filters.brands.length > 0) {
+          // Accept both Brand and brand (case-insensitive), trim whitespace
+          const productBrandRaw = (typeof p.Brand === 'string' ? p.Brand : getStringField(p, 'brand'))
+          const productBrand = String(productBrandRaw).trim().toLowerCase()
+          // If product has no explicit brand field, try to infer from product name
+          const nameLower = (p.name || '').toLowerCase()
+          const matchesBrand = filters.brands.some(b => {
+            const bnorm = b.trim().toLowerCase()
+            if (productBrand && productBrand === bnorm) return true
+            if (nameLower && nameLower.includes(bnorm)) return true
+            return false
+          })
+          if (!matchesBrand) return false
+        }
+        // CPU filter (substring, normalized)
+        if (filters.cpu.length > 0) {
+          const cpuRaw = typeof p.CPU === 'string' ? p.CPU : getStringField(p, 'cpu')
+          const cpuNorm = normalizeForMatch(cpuRaw)
+          const cpuMatch = filters.cpu.some(f => cpuNorm.includes(normalizeForMatch(f)))
+          if (!cpuMatch) return false
+        }
+        // RAM filter (match numbers like 8GB, 16GB)
+        if (filters.ram.length > 0) {
+          const ramRaw = typeof p.RAM === 'string' ? p.RAM : getStringField(p, 'ram')
+          const ramNorm = normalizeForMatch(ramRaw)
+          const ramMatch = filters.ram.some(f => ramNorm.includes(normalizeForMatch(f)))
+          if (!ramMatch) return false
+        }
+        // Storage filter
+        if (filters.storage.length > 0) {
+          const storageRaw = typeof p.Storage === 'string' ? p.Storage : getStringField(p, 'storage')
+          const storageNorm = normalizeForMatch(storageRaw)
+          const storageMatch = filters.storage.some(f => storageNorm.includes(normalizeForMatch(f)))
+          if (!storageMatch) return false
+        }
+        // Color filter
+        if (filters.colors.length > 0) {
+          const productColorRaw = (typeof p.Color === 'string' ? p.Color : getStringField(p, 'color'))
+          const productColor = String(productColorRaw).trim().toLowerCase()
+          if (!filters.colors.some(c => productColor === String(c).trim().toLowerCase())) return false
+        }
+        return true
+      })
+      // Sort
+      if (sortBy === 'price-asc') {
+        filtered.sort((a: Product, b: Product) => (a.price || 0) - (b.price || 0))
+      } else if (sortBy === 'price-desc') {
+        filtered.sort((a: Product, b: Product) => (b.price || 0) - (a.price || 0))
+      } else if (sortBy === 'rating') {
+        filtered.sort((a: Product, b: Product) => (b.rating || 0) - (a.rating || 0))
+      }
       setProducts(filtered)
-    } catch (e) {
-      console.error('Error fetching products:', e)
+    } catch {
+      console.error('Error fetching products')
       setProducts([])
     } finally {
       setLoading(false)
     }
-  }, [selectedCategory, selectedChildCategory, selectedBrands, priceRange, selectedRAM, selectedStorage, selectedCPU, sortBy])
-
-  // Initialize selectedCategory from URL param if present
-  useEffect(() => {
-    const cat = searchParams.get('category')
-    if (cat) {
-      const id = parseInt(cat)
-      if (!isNaN(id)) setSelectedCategory(id)
-    }
-  }, [searchParams])
-
-  useEffect(() => {
-    fetchProducts()
-  }, [fetchProducts])
-
-  // Reset child-category and spec filters when main category changes
-  useEffect(() => {
-    setSelectedChildCategory(null)
-    setSelectedBrands([])
-    setSelectedRAM([])
-    setSelectedStorage([])
-    setSelectedCPU([])
-  }, [selectedCategory])
+  }, [selectedCategory, filters, sortBy, searchParams])
 
   // ===== Handle Add to Cart =====
   const handleAddToCart = (product: Product) => {
@@ -216,204 +297,56 @@ export default function ProductList() {
     alert(`Đã thêm ${product.name} vào giỏ hàng!`)
   }
 
-  // ===== Computed =====
-  const mainCategories = categories.filter(c => c.parent_id === null)
-  const childCategories = selectedCategory
-    ? categories.filter(c => c.parent_id === selectedCategory)
-    : []
+  // Re-fetch products when filters or sorting change
+  useEffect(() => {
+    fetchProducts()
+  }, [fetchProducts, searchParams])
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <Navbar cartCount={cartCount} />
-
       <main className="pt-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          {/* Hero Carousel for Category */}
+          <div className="mb-8">
+            <SlimHeroCarousel 
+              category={
+                categories.find(c => c.category_id === selectedCategory)?.name.toLowerCase().replace(/\s+/g, '') || 'all'
+              }
+            />
+          </div>
+          
           {/* Breadcrumb */}
           <nav className="text-sm text-gray-500 mb-6">
             <Link to="/" className="hover:underline">Trang chủ</Link>
             <span className="mx-2">/</span>
             <span className="text-gray-300">Danh sách sản phẩm</span>
           </nav>
-
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-x-12 items-start">
             {/* ===== LEFT SIDEBAR: FILTERS ===== */}
-            <aside className="lg:col-span-1">
-              <div className="bg-[#1a1a1a] rounded-lg p-6 border border-gray-800 sticky top-28">
-                {/* Sort By */}
-                <div className="mb-6">
-                  <button
-                    onClick={() => setExpandedFilters({ ...expandedFilters, sort: !expandedFilters.sort })}
-                    className="w-full flex items-center justify-between mb-3"
-                  >
-                    <h3 className="font-semibold text-lg">Sắp xếp</h3>
-                    <ChevronDown className={`w-5 h-5 transition-transform ${expandedFilters.sort ? 'rotate-180' : ''}`} />
-                  </button>
-                  {expandedFilters.sort && (
-                    <div className="space-y-2 text-sm">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="sort" value="newest" checked={sortBy === 'newest'} onChange={e => setSortBy(e.target.value as any)} className="w-4 h-4" />
-                        Mới nhất
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="sort" value="price-asc" checked={sortBy === 'price-asc'} onChange={e => setSortBy(e.target.value as any)} className="w-4 h-4" />
-                        Giá: Thấp → Cao
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="sort" value="price-desc" checked={sortBy === 'price-desc'} onChange={e => setSortBy(e.target.value as any)} className="w-4 h-4" />
-                        Giá: Cao → Thấp
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="sort" value="rating" checked={sortBy === 'rating'} onChange={e => setSortBy(e.target.value as any)} className="w-4 h-4" />
-                        Đánh giá cao
-                      </label>
-                    </div>
-                  )}
-                  <hr className="my-6 border-gray-700" />
-                </div>
-
-                {/* Category Filter */}
-                <div className="mb-6">
-                  <button
-                    onClick={() => setExpandedFilters({ ...expandedFilters, category: !expandedFilters.category })}
-                    className="w-full flex items-center justify-between mb-3"
-                  >
-                    <h3 className="font-semibold text-lg">Danh mục</h3>
-                    <ChevronDown className={`w-5 h-5 transition-transform ${expandedFilters.category ? 'rotate-180' : ''}`} />
-                  </button>
-                  {expandedFilters.category && (
-                    <div className="space-y-2 text-sm">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="category"
-                          checked={selectedCategory === null}
-                          onChange={() => setSelectedCategory(null)}
-                          className="w-4 h-4"
-                        />
-                        Tất cả
-                      </label>
-                      {mainCategories.map(cat => (
-                        <label key={cat.category_id} className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="category"
-                            checked={selectedCategory === cat.category_id}
-                            onChange={() => setSelectedCategory(cat.category_id)}
-                            className="w-4 h-4"
-                          />
-                          {cat.name}
-                        </label>
-                      ))}
-                      {selectedCategory && childCategories.length > 0 && (
-                        <div className="mt-3">
-                          <div className="text-xs text-gray-400 mb-2">Loại</div>
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="child-category"
-                              checked={selectedChildCategory === null}
-                              onChange={() => setSelectedChildCategory(null)}
-                              className="w-4 h-4"
-                            />
-                            Tất cả loại
-                          </label>
-                          {childCategories.map(cc => (
-                            <label key={cc.category_id} className="flex items-center gap-2 cursor-pointer">
-                              <input
-                                type="radio"
-                                name="child-category"
-                                checked={selectedChildCategory === cc.category_id}
-                                onChange={() => setSelectedChildCategory(cc.category_id)}
-                                className="w-4 h-4"
-                              />
-                              {cc.name}
-                            </label>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <hr className="my-6 border-gray-700" />
-                </div>
-
-                {/* Brand Filter */}
-                <div className="mb-6">
-                  <button
-                    onClick={() => setExpandedFilters({ ...expandedFilters, brand: !expandedFilters.brand })}
-                    className="w-full flex items-center justify-between mb-3"
-                  >
-                    <h3 className="font-semibold text-lg">Thương hiệu</h3>
-                    <ChevronDown className={`w-5 h-5 transition-transform ${expandedFilters.brand ? 'rotate-180' : ''}`} />
-                  </button>
-                  {expandedFilters.brand && (
-                    <div className="space-y-2 text-sm max-h-[300px] overflow-y-auto">
-                      {brands.length > 0 ? (
-                        brands.map(brand => (
-                          <label key={brand.brand_id} className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={selectedBrands.includes(brand.brand_id)}
-                              onChange={() => {
-                                setSelectedBrands(
-                                  selectedBrands.includes(brand.brand_id)
-                                    ? selectedBrands.filter(b => b !== brand.brand_id)
-                                    : [...selectedBrands, brand.brand_id]
-                                )
-                              }}
-                              className="w-4 h-4"
-                            />
-                            {brand.name}
-                          </label>
-                        ))
-                      ) : (
-                        <p className="text-gray-500">Không có thương hiệu</p>
-                      )}
-                    </div>
-                  )}
-                  <hr className="my-6 border-gray-700" />
-                </div>
-
-                {/* Price Range */}
-                <div className="mb-6">
-                  <button
-                    onClick={() => setExpandedFilters({ ...expandedFilters, price: !expandedFilters.price })}
-                    className="w-full flex items-center justify-between mb-3"
-                  >
-                    <h3 className="font-semibold text-lg">Khoảng giá</h3>
-                    <ChevronDown className={`w-5 h-5 transition-transform ${expandedFilters.price ? 'rotate-180' : ''}`} />
-                  </button>
-                  {expandedFilters.price && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-sm">
-                        <input
-                          type="number"
-                          value={priceRange[0]}
-                          onChange={e => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
-                          placeholder="Min"
-                          className="w-20 px-2 py-1 bg-[#0b0b0b] border border-gray-700 rounded text-white"
-                        />
-                        <span>-</span>
-                        <input
-                          type="number"
-                          value={priceRange[1]}
-                          onChange={e => setPriceRange([priceRange[0], parseInt(e.target.value) || 100_000_000])}
-                          placeholder="Max"
-                          className="w-20 px-2 py-1 bg-[#0b0b0b] border border-gray-700 rounded text-white"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </aside>
-
+            <div className="lg:col-span-1 pr-0 lg:pr-10 relative z-10">
+                <FilterSidebar
+                  filters={filters}
+                  onFilterChange={setFilters}
+                />
+            </div>
             {/* ===== RIGHT CONTENT: PRODUCTS GRID ===== */}
-            <div className="lg:col-span-3">
-              {/* Results info */}
-              <div className="mb-6">
+            <div className="lg:col-span-3 relative z-0">
+              {/* Sort and Results info */}
+              <div className="mb-6 flex items-center justify-between">
                 <p className="text-gray-400">
                   {loading ? 'Đang tải...' : `Tìm thấy ${products.length} sản phẩm`}
                 </p>
+                <select
+                  value={sortBy}
+                  onChange={e => setSortBy(e.target.value as 'newest' | 'price-asc' | 'price-desc' | 'rating')}
+                  className="px-3 py-2 bg-[#1a1a1a] border border-gray-800 rounded-lg text-white text-sm"
+                >
+                  <option value="newest">Mới nhất</option>
+                  <option value="price-asc">Giá: Thấp → Cao</option>
+                  <option value="price-desc">Giá: Cao → Thấp</option>
+                  <option value="rating">Đánh giá cao</option>
+                </select>
               </div>
 
               {/* Products Grid */}

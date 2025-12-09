@@ -42,6 +42,30 @@ export function Navbar({ cartCount }: NavbarProps) {
     return <Cpu className="w-5 h-5" />;
   }
 
+  function slugify(s: string) {
+    // Remove accents from Vietnamese characters
+    const map: Record<string, string> = {
+      'à': 'a', 'á': 'a', 'ạ': 'a', 'ả': 'a', 'ã': 'a',
+      'ă': 'a', 'ằ': 'a', 'ắ': 'a', 'ặ': 'a', 'ẳ': 'a', 'ẵ': 'a',
+      'â': 'a', 'ầ': 'a', 'ấ': 'a', 'ậ': 'a', 'ẩ': 'a', 'ẫ': 'a',
+      'è': 'e', 'é': 'e', 'ẹ': 'e', 'ẻ': 'e', 'ẽ': 'e',
+      'ê': 'e', 'ề': 'e', 'ế': 'e', 'ệ': 'e', 'ể': 'e', 'ễ': 'e',
+      'ì': 'i', 'í': 'i', 'ị': 'i', 'ỉ': 'i', 'ĩ': 'i',
+      'ò': 'o', 'ó': 'o', 'ọ': 'o', 'ỏ': 'o', 'õ': 'o',
+      'ô': 'o', 'ồ': 'o', 'ố': 'o', 'ộ': 'o', 'ổ': 'o', 'ỗ': 'o',
+      'ơ': 'o', 'ờ': 'o', 'ớ': 'o', 'ợ': 'o', 'ở': 'o', 'ỡ': 'o',
+      'ù': 'u', 'ú': 'u', 'ụ': 'u', 'ủ': 'u', 'ũ': 'u',
+      'ư': 'u', 'ừ': 'u', 'ứ': 'u', 'ự': 'u', 'ử': 'u', 'ữ': 'u',
+      'ỳ': 'y', 'ý': 'y', 'ỵ': 'y', 'ỷ': 'y', 'ỹ': 'y',
+      'đ': 'd',
+    }
+    let str = String(s || '').toLowerCase().trim()
+    for (const [k, v] of Object.entries(map)) {
+      str = str.replace(new RegExp(k, 'g'), v)
+    }
+    return str.replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '')
+  }
+
   useEffect(() => {
     // Fetch categories from backend (brands are loaded per-category on hover)
     const fetchCategories = async () => {
@@ -128,28 +152,9 @@ export function Navbar({ cartCount }: NavbarProps) {
   // Determine four main categories (Laptop, PC, Màn hình, Phụ kiện)
   const mainCategories = (() => {
     if (!categories || categories.length === 0) return [] as typeof categories;
-
-    const byName = (n: string) => (s: string) => s.toLowerCase().includes(n);
-
-    const find = (pred: (s: string) => boolean) => categories.find(c => pred(String(c.name)));
-
-    const laptop = find(byName('lap'));
-    const pc = find(byName('pc')) || find(byName('máy tính')) || find(byName('desktop'));
-    const monitor = find((s) => s.toLowerCase().includes('màn') || s.toLowerCase().includes('man') || s.toLowerCase().includes('screen') || s.toLowerCase().includes('monitor'));
-    const accessories = find((s) => s.toLowerCase().includes('phụ') || s.toLowerCase().includes('phu') || s.toLowerCase().includes('phụ kiện') || s.toLowerCase().includes('accessories'));
-
-    const picked = [laptop, pc, monitor, accessories].filter(Boolean) as typeof categories;
-
-    // If any main category not found, fill with top-level categories (parent_id === null)
-    if (picked.length < 4) {
-      const topLevel = categories.filter(c => c.parent_id === null && !picked.some(p => p.category_id === c.category_id));
-      for (const t of topLevel) {
-        if (picked.length >= 4) break;
-        picked.push(t);
-      }
-    }
-
-    return picked.slice(0, 4);
+    // Get all top-level categories (parent_id === null)
+    const topLevel = categories.filter(c => c.parent_id === null);
+    return topLevel;
   })();
 
   // When dropdown opens, ensure we have a selected main category and load its brands
@@ -205,7 +210,7 @@ export function Navbar({ cartCount }: NavbarProps) {
                   {mainCategories.map((category, index) => (
                     <Link
                       key={category.category_id}
-                      to={`/products?category=${category.category_id}`}
+                      to={`/products?category=${encodeURIComponent(slugify(category.name))}`}
                       onMouseEnter={() => handleHoverMain(index, category.category_id)}
                       className={`flex items-center justify-between gap-3 px-4 py-3 cursor-pointer transition-all ${
                         selectedCategory === index 
