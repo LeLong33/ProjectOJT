@@ -29,7 +29,7 @@ const onlyAdmin = [
 router.get('/', ProductController.getAllProducts as RequestHandler);
 
 // Lấy sản phẩm theo ID 
-router.get('/:id', ProductController.getProductDetails as RequestHandler);
+router.get('/:id', ProductController.getProductById as RequestHandler);
 
 
 // ---------------------------------------------------------------------
@@ -57,7 +57,7 @@ router.put('/:id',
  */
 router.delete('/:id', 
     ...onlyAdmin, // CHỈ ADMIN
-    ProductController.deleteProduct as RequestHandler
+    ProductController.deleteExistingProduct as RequestHandler
 );
 
 export default router;
