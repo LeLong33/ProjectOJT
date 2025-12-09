@@ -34,6 +34,7 @@ app.use('/api/products', productRoutes); // Sản phẩm (Public & Admin)
 app.use('/api/categories', categoryRoutes); // ⬅️ Tích hợp Category CRUD
 app.use('/api/brands', brandRoutes);       // ⬅️ Tích hợp Brand CRUD
 
+
 // KHÔNG CẦN DÒNG app.use('/api', authRoutes);
 
 // Khởi động server
