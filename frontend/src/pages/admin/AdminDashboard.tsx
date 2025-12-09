@@ -1,77 +1,84 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Package, List, Tag, User, Code, LogOut } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Package, List, Tag, User, Code, LogOut, Home, Users } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useApi } from '@/hooks/useApi';
+
+// Import các component quản lý
+import ProductCRUD from './ProductCRUD';
+import UserCRUD from './UserCRUD'; // ⬅️ THÊM: Component quản lý người dùng
+
+const Overview = () => (
+    <div className="space-y-4">
+        <h1 className="text-4xl font-extrabold text-white">Tổng quan Dashboard</h1>
+        <div className="grid grid-cols-3 gap-6">
+            <div className="p-6 bg-red-700/50 rounded-xl shadow-lg">Tổng sản phẩm: XX</div>
+            <div className="p-6 bg-blue-700/50 rounded-xl shadow-lg">Đơn hàng mới: XX</div>
+            <div className="p-6 bg-green-700/50 rounded-xl shadow-lg">Doanh thu tháng: XX</div>
+        </div>
+        <div className="mt-8 p-6 bg-gray-800 rounded-xl shadow-lg">
+             <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2"><Code className="h-6 w-6"/> Test Quyền POST Sản phẩm</h2>
+             <p className="text-gray-400">Chọn "Sản phẩm" hoặc "Người dùng" từ menu để thực hiện CRUD và kiểm tra phân quyền 403.</p>
+        </div>
+    </div>
+);
+
 
 export default function AdminDashboard() {
     const { user, logout } = useAuth();
     const api = useApi();
     const navigate = useNavigate();
-    const [testResult, setTestResult] = useState('');
+    const location = useLocation();
+    const currentPath = location.pathname;
 
     const handleLogout = () => {
         logout();
         navigate('/');
     };
-
-    // Hàm TEST API POST (chỉ Admin/Staff)
-    const testAdminPost = async () => {
-        setTestResult('Đang chạy test POST...');
-        if (!user) return;
-
-        // Dữ liệu tạo sản phẩm TEST (cần brand_id=1, category_id=1 từ DB mẫu)
-        const testData = {
-            name: `Test Quyền ${user.role} ${Date.now()}`, 
-            price: 99.99, 
-            quantity: 1, 
-            code: `TEST${Date.now().toString().slice(-6)}`,
-            brand_id: 1, 
-            category_id: 1
-        };
-
-        try {
-            const res = await api.post('/products/admin', testData);
-            setTestResult(`✅ Thành công! Role ${user.role} đã tạo sản phẩm ID: ${res.data.product_id}`);
-        } catch (error: any) {
-            if (error.response?.status === 403) {
-                 setTestResult(`❌ Thất bại: Bạn có role [${user.role.toUpperCase()}] nhưng không đủ quyền tạo sản phẩm (403 Forbidden).`);
-            } else if (error.response?.status === 401) {
-                 setTestResult('❌ Thất bại: Token hết hạn/Không hợp lệ (401 Unauthorized).');
-            } else {
-                 setTestResult(`❌ Lỗi API: ${error.message}`);
-            }
+    
+    const renderMainContent = () => {
+        if (currentPath.endsWith('/admin/products')) {
+            return <ProductCRUD />;
         }
+        if (currentPath.endsWith('/admin/users')) {
+            return <UserCRUD/>; // ⬅️ RENDER USER LIST
+        }
+        return <Overview />;
     };
-
+    
     if (!user) {
         return <div className="p-10 text-red-500">Đang tải thông tin người dùng...</div>;
     }
 
-    // Các mục điều hướng
+    // ⬅️ CẬP NHẬT: Loại bỏ Brand, Category, thêm Users
     const navItems = [
+        { name: "Tổng quan", icon: Home, link: "/admin", roles: ['admin', 'staff', 'user'] }, // User cũng có thể xem tổng quan
         { name: "Sản phẩm", icon: Package, link: "/admin/products", roles: ['admin', 'staff'] },
-        { name: "Danh mục", icon: List, link: "/admin/categories", roles: ['admin', 'staff'] },
-        { name: "Thương hiệu", icon: Tag, link: "/admin/brands", roles: ['admin', 'staff'] },
-        { name: "Người dùng", icon: User, link: "/admin/users", roles: ['admin'] },
+        { name: "Người dùng", icon: Users, link: "/admin/users", roles: ['admin'] }, // Chỉ Admin quản lý users
     ];
+    
+    const isActive = (path: string) => currentPath.endsWith(path) || (path === '/admin' && currentPath === '/admin');
+
 
     return (
         <div className="flex min-h-screen bg-gray-900 text-white">
             {/* Sidebar */}
-            <aside className="w-64 bg-gray-800 p-6 shadow-2xl flex flex-col justify-between">
+            <aside className="w-64 bg-gray-800 p-6 shadow-2xl flex flex-col justify-between sticky top-0 h-screen">
                 <div>
                     <h2 className="text-3xl font-bold mb-8 text-red-500">Admin Panel</h2>
-                    <p className="text-sm text-gray-400 mb-4">Vai trò hiện tại: <span className="font-bold text-red-400">{user.role.toUpperCase()}</span></p>
+                    <p className="text-sm text-gray-400 mb-4">Vai trò: <span className="font-bold text-red-400">{user.role.toUpperCase()}</span></p>
                     <nav className="space-y-2">
                         {navItems
-                            // Lọc các mục chỉ được phép hiển thị cho vai trò hiện tại
                             .filter(item => item.roles.includes(user.role))
                             .map(item => (
                                 <Link 
                                     key={item.name} 
                                     to={item.link} 
-                                    className="flex items-center gap-3 p-3 rounded-lg text-gray-300 hover:bg-red-600/50 hover:text-white transition-colors duration-200"
+                                    className={`flex items-center gap-3 p-3 rounded-lg transition-colors duration-200 ${
+                                        isActive(item.link) 
+                                        ? 'bg-red-600 text-white' 
+                                        : 'text-gray-300 hover:bg-gray-700'
+                                    }`}
                                 >
                                     <item.icon className="w-5 h-5" />
                                     <span className="text-base">{item.name}</span>
@@ -81,7 +88,7 @@ export default function AdminDashboard() {
                     </nav>
                 </div>
 
-                {/* Footer / User Info */}
+                {/* Footer / Logout */}
                 <div className="mt-8 pt-4 border-t border-gray-700">
                     <button 
                         onClick={handleLogout} 
@@ -95,21 +102,9 @@ export default function AdminDashboard() {
 
             {/* Main Content Area */}
             <main className="flex-1 p-8 overflow-y-auto">
-                <h1 className="text-4xl font-extrabold mb-6 text-white">Chào mừng, {user.name}!</h1>
-                <p className="text-lg text-gray-400">Dashboard thử nghiệm chức năng Backend Admin.</p>
-
-                <div className="mt-10 p-6 bg-gray-800 rounded-xl shadow-lg border border-red-700/50">
-                    <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2"><Code className="h-6 w-6"/> Test Quyền POST Sản phẩm (/api/products/admin)</h2>
-                    <button 
-                        onClick={testAdminPost} 
-                        disabled={!['admin', 'staff'].includes(user.role)}
-                        className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 px-4 py-2 rounded text-white font-semibold transition-colors"
-                    >
-                        {['admin', 'staff'].includes(user.role) ? 'Chạy Test POST' : 'Yêu cầu quyền Admin/Staff'}
-                    </button>
-                    <p className="mt-4 text-lg font-medium text-yellow-400">Kết quả: {testResult}</p>
+                <div className="bg-gray-800 rounded-xl p-6 shadow-lg">
+                    {renderMainContent()}
                 </div>
-
             </main>
         </div>
     );

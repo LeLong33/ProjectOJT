@@ -17,6 +17,22 @@ export async function findAllBrands(): Promise<Brand[]> {
 }
 
 /**
+ * Lấy danh sách thương hiệu có sản phẩm trong một danh mục cụ thể
+ */
+export async function findBrandsByCategory(categoryId: number): Promise<Brand[]> {
+    const query = `
+        SELECT DISTINCT b.brand_id, b.name
+        FROM brands b
+        INNER JOIN products p ON p.brand_id = b.brand_id
+        INNER JOIN categories c ON p.category_id = c.category_id
+        WHERE (p.category_id = ? OR c.parent_id = ?) AND p.is_active = 1
+        ORDER BY b.name ASC
+    `;
+    const [rows] = await db.query<Brand[]>(query, [categoryId, categoryId]);
+    return rows;
+}
+
+/**
  * Tạo thương hiệu mới
  */
 export async function createBrand(name: string): Promise<number> {

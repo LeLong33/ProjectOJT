@@ -11,6 +11,10 @@ CREATE TABLE accounts (
     role ENUM('user', 'staff', 'admin')
 );
 
+ALTER TABLE accounts
+    ADD COLUMN  date_of_birth DATE NULL,
+    ADD COLUMN  avatar_url VARCHAR(512) NULL;
+
 CREATE TABLE addresses (
     address_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
     account_id INT,

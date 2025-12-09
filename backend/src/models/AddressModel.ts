@@ -28,7 +28,12 @@ export async function findAddressesByAccountId(accountId: number): Promise<Addre
  */
 export async function createAddress(addressData: Omit<Address, 'address_id'>): Promise<number> {
     const { account_id, recipient_name, phone_number, address, district, city, country, is_default } = addressData;
-    
+    // If this new address is marked default, unset previous defaults for this account
+    if (is_default) {
+        const unsetQuery = `UPDATE addresses SET is_default = FALSE WHERE account_id = ?`;
+        await db.execute(unsetQuery, [account_id]);
+    }
+
     const query = `
         INSERT INTO addresses (account_id, recipient_name, phone_number, address, district, city, country, is_default)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)

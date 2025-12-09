@@ -10,6 +10,14 @@ import * as ProductModel from '../models/ProductModel'; // Import toàn bộ mod
  */
 export async function getAllProducts(req: Request, res: Response) {
     try {
+        const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+        const limit = req.query.limit ? parseInt(String(req.query.limit)) : 6;
+
+        if (q && q.length > 0) {
+            const products = await ProductModel.findProductsByKeyword(q, isNaN(limit) ? 6 : limit);
+            return res.status(200).json({ success: true, data: products });
+        }
+
         const products = await ProductModel.findAllActiveProducts();
         return res.status(200).json({ success: true, data: products });
     } catch (error) {
@@ -31,6 +39,16 @@ export async function getProductDetails(req: Request, res: Response) {
 
         const product = await ProductModel.findProductById(id);
         if (!product) return res.status(404).json({ success: false, message: "Không tìm thấy sản phẩm" });
+
+        // Lấy tất cả ảnh của sản phẩm (chính + phụ)
+        try {
+            const images = await ProductModel.findAllImagesByProductId(id);
+            // map to simple urls
+            (product as any).images = images.map(img => ({ image_id: img.image_id, url: img.url, is_main: !!img.is_main }));
+        } catch (imgErr) {
+            console.warn('Could not load product images', imgErr);
+            (product as any).images = [];
+        }
 
         return res.status(200).json({ success: true, data: product });
     } catch (error) {
