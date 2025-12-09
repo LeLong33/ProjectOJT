@@ -14,26 +14,26 @@ export function SlimHeroCarousel({ category }: SlimHeroCarouselProps) {
         {
           title: 'Laptop Gaming Mới Nhất',
           subtitle: 'Hiệu năng đỉnh cao với RTX 40 Series',
-          image: 'https://images.unsplash.com/photo-1658262548679-776e437f95e…ZWNofGVufDF8fHx8MTc2NDA0MTcxOXww&ixlib=rb-4.1.0&q=80&w=1080',
+          image: 'https://file.hstatic.net/200000722513/file/card-roi-laptop-la-gi-3_31fc7fb0a2c44a16a7021dfa60dce9dc.jpg',
         },
         {
           title: 'Laptop Văn Phòng',
           subtitle: 'Mỏng nhẹ, pin trâu, hiệu quả',
-          image: 'https://images.unsplash.com/photo-1646153114001-495dfb56506…ZWNofGVufDF8fHx8MTc2Mzk3Mjg5NHww&ixlib=rb-4.1.0&q=80&w=1080',
+          image: 'https://cellphones.com.vn/sforum/wp-content/uploads/2023/06/laptop-van-phong-20-trieu-11.jpg',
         },
       ],
       monitor: [
         {
           title: 'Màn Hình Gaming 240Hz',
           subtitle: 'Độ phản hồi nhanh, màu sắc sống động',
-          image: 'https://images.unsplash.com/photo-1551459601-c42a28ef7506?c…dG9yfGVufDF8fHx8MTc2NDA0MTcxOXww&ixlib=rb-4.1.0&q=80&w=1080',
+          image: 'https://cdn-media.sforum.vn/storage/app/media/wp-content/uploads/2023/03/man-hinh-gaming-ultrawide-tot-nhat-thumb-scaled-e1680163360164.jpg',
         },
       ],
       pc: [
         {
           title: 'PC Gaming Custom',
           subtitle: 'Build theo yêu cầu, tản nhiệt tốt',
-          image: 'https://images.unsplash.com/photo-1603481588273-2f908a9a7a1…dHVwfGVufDF8fHx8MTc2NDAzMzMwM3ww&ixlib=rb-4.1.0&q=80&w=1080',
+          image: 'https://file.hstatic.net/200000837185/collection/pc-gaming_14bcf1861d7f42239a18fb7b05fb7218_grande.jpg',
         },
       ],
       accessories: [
