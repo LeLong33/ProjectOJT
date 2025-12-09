@@ -1,0 +1,27 @@
+.products-page {
+    background: #f9f9f9;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.page-container {
+    display: flex;
+    gap: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+    .page-container {
+        flex-direction: column;
+    }
+
+    .filter-bar {
+        min-width: 100%;
+        max-height: none;
+    }
+
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+}
