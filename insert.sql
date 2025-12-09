@@ -3,6 +3,13 @@ INSERT INTO accounts (name, email, password, phone_number, role) VALUES
 ('Admin ', 'admin@example.com', 123456, '0904445556', 'admin'),
 ('Staff ', 'staff@example.com', 123456, '0907778889', 'staff');
 
+-- Dán chuỗi hash mới mà script vừa tạo ở đây
+SET @NEW_HASH = '$2b$10$1LiVjZ0ZjetyfeQmylfME.7JbsN7yD6HC7tuFrpXNJSCAP6nnBKW2';
+
+-- Cập nhật tài khoản Admin
+UPDATE accounts
+SET password = @NEW_HASH
+WHERE email = 'admin@gmail.com';
 -- -----------------------------------
 -- 2. CHÈN DỮ LIỆU DANH MỤC (categories)
 -- -----------------------------------

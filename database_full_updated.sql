@@ -41,7 +41,7 @@ CREATE TABLE brands (
 );
 
 CREATE TABLE products (
-    product_id INT PRIMARY KEY AUTO_INCREMENT, 
+    product_id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(255),
     code VARCHAR(100) UNIQUE,
     price DECIMAL(10,2),
@@ -111,7 +111,7 @@ CREATE TABLE orders (
     deliveredAt DATETIME NULL,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (account_id) REFERENCES accounts(account_id) ON DELETE SET NULL,
-    FOREIGN KEY (address_id) REFERENCES addresses(address_id) 
+    FOREIGN KEY (address_id) REFERENCES addresses(address_id)
 );
 
 
@@ -134,7 +134,7 @@ CREATE TABLE order_items (
     quantity INT NOT NULL,
     price_at_order DECIMAL(10, 2) NOT NULL,
     FOREIGN KEY (`order_id`) REFERENCES `orders`(`order_id`) ON DELETE CASCADE,
-    FOREIGN KEY (`product_id`) REFERENCES `products`(`product_id`) ON DELETE RESTRICT 
+    FOREIGN KEY (`product_id`) REFERENCES `products`(`product_id`) ON DELETE RESTRICT
 );
 
 
