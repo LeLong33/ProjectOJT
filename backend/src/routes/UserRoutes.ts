@@ -4,6 +4,8 @@ import {
     getMyAddresses, 
     addAddress, 
     updateMyAddress,
+    updateProfile,
+    changePassword,
     getAllAccounts, // ⬅️ THÊM: Lấy danh sách tài khoản
     updateAccountRole  // ⬅️ THÊM: Cập nhật Role
 } from '../controllers/UserController';
@@ -23,6 +25,9 @@ router.use(protect as RequestHandler);
  * [GET] /api/users/profile - Lấy thông tin hồ sơ
  */
 router.get('/profile', getUserProfile as RequestHandler);
+// PUT profile and change-password
+router.put('/profile', updateProfile as RequestHandler);
+router.put('/change-password', changePassword as RequestHandler);
 
 
 // ---------------------------------------------------------------------

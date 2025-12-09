@@ -8,6 +8,8 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import ProductDetail from "./pages/products/ProductDetail";
 import CartPage from "./pages/cart/CartPage";
 import ProductList from "./pages/ProductList";
+import CheckoutPage from "./pages/orders/CheckoutPage";
+import UserProfilePage from "./pages/user/UserProfilePage";
 
 
 // ⬅️ CẦN THIẾT: Import AuthProvider
@@ -28,6 +30,7 @@ function App() {
           <Route path="/login" element={<SignInPage />}/>
           <Route path="/register" element={<SignUpPage />}/>
           <Route path="/auth/success" element={<AuthSuccess />} /> 
+          <Route path="/checkout" element={<CheckoutPage />} />
           {/* ⬅️ ROUTE ADMIN DASHBOARD */}
             <Route 
                 path="/admin" 
@@ -37,6 +40,7 @@ function App() {
                     </ProtectedRoute>
                 } 
             />
+            <Route path="/profile" element={<ProtectedRoute allowedRoles={['admin', 'staff', 'user']}> <UserProfilePage /> </ProtectedRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

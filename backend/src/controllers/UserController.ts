@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as AddressModel from '../models/AddressModel';
 import * as AccountModel from '../models/AccountModel';
+import bcrypt from 'bcryptjs';
 
 
 
@@ -128,3 +129,51 @@ export const updateAccountRole = async (req: Request, res: Response) => {
         res.status(500).json({ success: false, message: 'Lỗi server nội bộ.' });
     }
 };
+
+/**
+ * [PUT] /api/users/profile - Cập nhật thông tin hồ sơ
+ */
+export const updateProfile = async (req: Request, res: Response) => {
+    try {
+        const accountId = req.user!.id;
+        const allowed: any = {};
+        const { name, phone_number, date_of_birth, avatar_url } = req.body;
+        if (name !== undefined) allowed.name = name;
+        if (phone_number !== undefined) allowed.phone_number = phone_number;
+        if (date_of_birth !== undefined) allowed.date_of_birth = date_of_birth;
+        if (avatar_url !== undefined) allowed.avatar_url = avatar_url;
+
+        const affected = await AccountModel.updateProfile(accountId, allowed);
+        if (affected === 0) {
+            return res.status(400).json({ success: false, message: 'Không có thay đổi hoặc cập nhật thất bại.' });
+        }
+
+        // Return updated profile
+        const updated = await AccountModel.findById(accountId);
+        return res.status(200).json({ success: true, data: updated });
+    } catch (error) {
+        console.error('Lỗi khi cập nhật profile:', error);
+        return res.status(500).json({ success: false, message: 'Lỗi máy chủ nội bộ.' });
+    }
+}
+
+/**
+ * [PUT] /api/users/change-password - đổi mật khẩu
+ */
+export const changePassword = async (req: Request, res: Response) => {
+    try {
+        const accountId = req.user!.id;
+        const { currentPassword, newPassword } = req.body;
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ success: false, message: 'Vui lòng cung cấp mật khẩu hiện tại và mật khẩu mới.' });
+        }
+
+        const ok = await AccountModel.changePassword(accountId, currentPassword, newPassword);
+        if (!ok) return res.status(400).json({ success: false, message: 'Mật khẩu hiện tại không đúng.' });
+
+        return res.status(200).json({ success: true, message: 'Đổi mật khẩu thành công.' });
+    } catch (error) {
+        console.error('Lỗi khi đổi mật khẩu:', error);
+        return res.status(500).json({ success: false, message: 'Lỗi máy chủ nội bộ.' });
+    }
+}
