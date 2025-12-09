@@ -1,4 +1,3 @@
-// backend/src/routes/AuthRoutes.ts
 import { Router, RequestHandler } from 'express';
 import { register, login } from '../controllers/AuthController';
 import * as AccountModel from '../models/AccountModel';
@@ -31,14 +30,19 @@ router.get(
         session: false 
     }),
     (req, res) => {
-        // Lấy thông tin người dùng từ Passport (đã qua findOrCreateGoogleUser)
-        const user = req.user as AccountModel.Account;
+        // 👇 FIX LỖI TẠI ĐÂY:
+        // Dùng 'as unknown' để tránh lỗi xung đột kiểu dữ liệu giữa JWT User và Database Account
+        const user = req.user as unknown as AccountModel.Account;
         
-        // Tạo JWT
+        if (!user) {
+             res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/failure`);
+             return;
+        }
+
+        // Tạo JWT (Lưu ý: dùng user.account_id thay vì user.id vì đây là object Account từ DB)
         const token = signToken(user.account_id, user.role);
         
         // Chuyển hướng về Frontend với token
-        // Sử dụng biến môi trường (nếu có) để Frontend URL linh hoạt hơn:
         const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
         // Chuyển hướng thành công

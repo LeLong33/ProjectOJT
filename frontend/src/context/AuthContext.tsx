@@ -5,56 +5,59 @@ import React, {
   useEffect,
   type ReactNode,
 } from "react";
-import { jwtDecode } from 'jwt-decode';// Định nghĩa kiểu cho User Data (Payload JWT)
+import { jwtDecode } from 'jwt-decode';
+
 interface UserData {
   id: number;
-  role: 'user' | 'staff' | 'admin'; // Role lấy từ Backend
+  role: 'user' | 'staff' | 'admin';
   name: string;
-  // exp: number; (Thời gian hết hạn)
-}
-// Định nghĩa kiểu dữ liệu cho Context
-interface AuthContextType {
-  isAuthenticated: boolean; // Trạng thái: Đã đăng nhập chưa?
-  login: (token: string) => void; // Hàm đăng nhập
-  logout: () => void; // Hàm đăng xuất
-  isLoading: boolean; // Trạng thái đang kiểm tra token
-  user?: UserData | null;
 }
 
-// Tạo Context
+// 1️⃣ CẬP NHẬT INTERFACE: Thêm token vào đây
+interface AuthContextType {
+  isAuthenticated: boolean;
+  login: (token: string) => void;
+  logout: () => void;
+  isLoading: boolean;
+  user: UserData | null; // Sửa lại type cho rõ ràng (bỏ undefined)
+  token: string | null;  // ⬅️ THÊM DÒNG NÀY
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Provider Component
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<UserData | null>(null);
+  // 2️⃣ CẬP NHẬT STATE: Thêm state lưu token
+  const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const checkAuthStatus = () => {
-      const token = localStorage.getItem("token");
-      if (token) {
+      const storedToken = localStorage.getItem("token");
+      
+      if (storedToken) {
         try {
-          const decoded = jwtDecode<UserData & { exp?: number }>(token);
-          setUser({ id: decoded.id, role: decoded.role, name: decoded.name });
-          // Nếu token có exp và đã hết hạn thì logout
+          const decoded = jwtDecode<UserData & { exp?: number }>(storedToken);
+          
+          // Kiểm tra hết hạn
           if (decoded.exp && decoded.exp * 1000 < Date.now()) {
-            localStorage.removeItem('token');
-            setIsAuthenticated(false);
-            setUser(null);
-            setIsLoading(false);
+            console.warn('Token expired');
+            logout(); // Gọi hàm logout để dọn dẹp
             return;
           }
+
+          setUser({ id: decoded.id, role: decoded.role, name: decoded.name });
           setIsAuthenticated(true);
+          setToken(storedToken); // Cập nhật state token
         } catch (err) {
-          // Nếu token không hợp lệ
-          console.warn('Invalid token stored, clearing it.');
-          localStorage.removeItem('token');
-          setIsAuthenticated(false);
-          setUser(null);
+          console.warn('Invalid token, clearing...');
+          logout();
         }
       } else {
         setIsAuthenticated(false);
+        setUser(null);
+        setToken(null);
       }
       setIsLoading(false);
     };
@@ -62,30 +65,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     checkAuthStatus();
   }, []);
 
-  const login = (token: string) => {
-    localStorage.setItem("token", token);
+  const login = (newToken: string) => {
+    localStorage.setItem("token", newToken);
+    setToken(newToken); // Cập nhật state
     try {
-      const decoded = jwtDecode<UserData & { exp?: number }>(token);
+      const decoded = jwtDecode<UserData & { exp?: number }>(newToken);
       setUser({ id: decoded.id, role: decoded.role, name: decoded.name });
+      setIsAuthenticated(true);
     } catch {
-      setUser(null);
+      // Nếu decode lỗi thì logout ngay
+      logout();
     }
-    setIsAuthenticated(true);
   };
 
   const logout = () => {
     localStorage.removeItem("token");
+    setToken(null); // Xóa state
     setIsAuthenticated(false);
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout, isLoading, user }}>
+    // 3️⃣ TRẢ VỀ TOKEN TRONG VALUE
+    <AuthContext.Provider value={{ isAuthenticated, login, logout, isLoading, user, token }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Custom Hook (Giữ nguyên Named Export)
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -94,7 +101,4 @@ export const useAuth = () => {
   return context;
 };
 
-// ⬅️ PHẦN BỔ SUNG QUAN TRỌNG: Thêm Default Export
-// Điều này giúp giải quyết lỗi khi các file khác dùng import useAuth from '...'
-// Export default the Provider for convenience
 export default AuthProvider;

@@ -3,17 +3,26 @@ import * as AddressModel from '../models/AddressModel';
 import * as AccountModel from '../models/AccountModel';
 import bcrypt from 'bcryptjs';
 
-
-
+/**
+ * [GET] /api/users/profile
+ * Lấy thông tin chi tiết của người dùng từ Database
+ */
 export const getUserProfile = async (req: Request, res: Response) => {
     try {
-        // req.user chứa thông tin từ JWT
-        const user = req.user;
+        // req.user được gán từ middleware xác thực (JWT)
+        const userId = req.user?.id;
         
-        if (!user) {
+        if (!userId) {
             return res.status(401).json({ message: 'Người dùng chưa được xác thực.' });
         }
 
+        // 👇 QUAN TRỌNG: Gọi Database để lấy full thông tin (SĐT, Ngày sinh...)
+        // Thay vì chỉ trả về req.user (thông tin từ token)
+        const user = await AccountModel.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản.' });
+        }
 
         res.status(200).json({ success: true, data: user });
     } catch (error) {
@@ -21,7 +30,6 @@ export const getUserProfile = async (req: Request, res: Response) => {
         res.status(500).json({ success: false, message: 'Lỗi máy chủ nội bộ.' });
     }
 };
-
 
 export const getMyAddresses = async (req: Request, res: Response) => {
     try {
@@ -87,8 +95,6 @@ export const updateMyAddress = async (req: Request, res: Response) => {
         console.error(`Lỗi khi cập nhật địa chỉ ID ${addressId}:`, error);
         res.status(500).json({ success: false, message: 'Lỗi máy chủ nội bộ.' });
     }
-
-    
 };
 
 export const getAllAccounts = async (req: Request, res: Response) => {
@@ -144,11 +150,11 @@ export const updateProfile = async (req: Request, res: Response) => {
         if (avatar_url !== undefined) allowed.avatar_url = avatar_url;
 
         const affected = await AccountModel.updateProfile(accountId, allowed);
-        if (affected === 0) {
-            return res.status(400).json({ success: false, message: 'Không có thay đổi hoặc cập nhật thất bại.' });
-        }
-
-        // Return updated profile
+        
+        // Lưu ý: updateProfile trả về số dòng bị ảnh hưởng. 
+        // Nếu user nhấn Lưu mà không sửa gì thì affected = 0, nhưng ta vẫn nên trả về data mới nhất.
+        
+        // Return updated profile from DB
         const updated = await AccountModel.findById(accountId);
         return res.status(200).json({ success: true, data: updated });
     } catch (error) {
@@ -177,3 +183,33 @@ export const changePassword = async (req: Request, res: Response) => {
         return res.status(500).json({ success: false, message: 'Lỗi máy chủ nội bộ.' });
     }
 }
+
+export const deleteAddress = async (req: Request, res: Response) => {
+    const addressId = parseInt(req.params.id);
+    try {
+        const accountId = req.user!.id; // Lấy từ JWT
+        const affected = await AddressModel.deleteAddress(addressId, accountId);
+        
+        if (affected === 0) {
+             return res.status(404).json({ success: false, message: 'Không tìm thấy địa chỉ.' });
+        }
+        res.status(200).json({ success: true, message: 'Đã xóa địa chỉ.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Lỗi server.' });
+    }
+};
+
+/**
+ * [PUT] /api/users/addresses/:id/default
+ */
+export const setDefaultAddress = async (req: Request, res: Response) => {
+    const addressId = parseInt(req.params.id);
+    try {
+        const accountId = req.user!.id;
+        await AddressModel.setAddressDefault(addressId, accountId);
+        res.status(200).json({ success: true, message: 'Đã đặt làm địa chỉ mặc định.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Lỗi server.' });
+    }
+};

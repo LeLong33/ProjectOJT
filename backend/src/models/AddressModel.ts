@@ -67,3 +67,39 @@ export async function updateAddress(addressId: number, accountId: number, update
     
     return (result as ResultSetHeader).affectedRows;
 }
+
+export async function deleteAddress(addressId: number, accountId: number): Promise<number> {
+    const query = 'DELETE FROM addresses WHERE address_id = ? AND account_id = ?';
+    const [result] = await db.execute(query, [addressId, accountId]);
+    return (result as ResultSetHeader).affectedRows;
+}
+
+/**
+ * Đặt một địa chỉ làm mặc định (Reset các cái khác về false trước)
+ */
+export async function setAddressDefault(addressId: number, accountId: number): Promise<boolean> {
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 1. Set tất cả địa chỉ của user này thành is_default = 0
+        await connection.execute(
+            'UPDATE addresses SET is_default = 0 WHERE account_id = ?', 
+            [accountId]
+        );
+
+        // 2. Set địa chỉ được chọn thành is_default = 1
+        const [result] = await connection.execute(
+            'UPDATE addresses SET is_default = 1 WHERE address_id = ? AND account_id = ?',
+            [addressId, accountId]
+        );
+
+        await connection.commit();
+        return (result as ResultSetHeader).affectedRows > 0;
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
+}

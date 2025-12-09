@@ -1,15 +1,16 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useState, useEffect } from 'react';
 import HomePage from "./pages/HomePage";
 import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
 import { Toaster } from "sonner";
 import { ProtectedRoute } from  "./components/auth/ProtectedRouter";
-import AdminDashboard from "./pages/admin/AdminDashboard";
+import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import ProductDetail from "./pages/products/ProductDetail";
 import CartPage from "./pages/cart/CartPage";
 import ProductList from "./pages/ProductList";
-import CheckoutPage from "./pages/orders/CheckoutPage";
-import UserProfilePage from "./pages/user/UserProfilePage";
+import { CheckoutPage } from "./pages/orders/CheckoutPage";
+import { UserProfilePage } from "./pages/user/UserProfilePage";
 
 
 // ⬅️ CẦN THIẾT: Import AuthProvider
@@ -17,6 +18,7 @@ import { AuthProvider } from "./context/AuthContext";
 import AuthSuccess from "./pages/AuthSuccess";
 
 function App() {
+  const [cartCount, setCartCount] = useState(0);
   return (
     <AuthProvider>
       <Toaster richColors/>
@@ -30,7 +32,7 @@ function App() {
           <Route path="/login" element={<SignInPage />}/>
           <Route path="/register" element={<SignUpPage />}/>
           <Route path="/auth/success" element={<AuthSuccess />} /> 
-          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/checkout" element={<CheckoutPage cartCount={cartCount} />} /> 
           {/* ⬅️ ROUTE ADMIN DASHBOARD */}
             <Route 
                 path="/admin" 
@@ -40,7 +42,7 @@ function App() {
                     </ProtectedRoute>
                 } 
             />
-            <Route path="/profile" element={<ProtectedRoute allowedRoles={['admin', 'staff', 'user']}> <UserProfilePage /> </ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute allowedRoles={['admin', 'staff', 'user']}> <UserProfilePage cartCount={cartCount} /> </ProtectedRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

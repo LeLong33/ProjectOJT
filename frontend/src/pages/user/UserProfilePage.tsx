@@ -1,465 +1,445 @@
-import React, { useEffect, useState, type FormEvent } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, MapPin, ShoppingCart, LogOut, Camera, Lock, Key, Mail, Phone, Calendar, Plus, Trash2, X } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
 import { Navbar } from '@/pages/Navbar';
 import { Footer } from '@/pages/Footer';
-import { Button } from '@/components/ui/button'; 
 import { Toaster, toast } from 'sonner';
+import { 
+  User, Package, MapPin, Shield, 
+  Settings, Trash2, Plus, Eye, X, LogOut, Lock, Key 
+} from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// --- TYPES ---
+// --- INTERFACES ---
+interface UserProfileData {
+  account_id: number;
+  name: string;
+  email: string;
+  phone_number: string;
+  date_of_birth: string | null;
+}
+
 interface Address {
-    address_id: number;
+  address_id: number;
+  recipient_name: string;
+  phone_number: string;
+  address: string;
+  district: string;
+  city: string;
+  country: string;
+  is_default: number;
+}
+
+interface OrderItem {
+    item_id: number;
+    product_id: number;
+    product_name: string;
+    product_image: string;
+    quantity: number;
+    price_at_order: number;
+}
+
+interface OrderDetail {
+    order_id: number;
+    status: string;
+    final_amount: number;
+    createdAt: string;
     recipient_name: string;
     phone_number: string;
     address: string;
-    district: string;
     city: string;
-    country: string;
-    is_default: boolean;
+    items: OrderItem[];
 }
 
-interface UserProfile {
-    name: string;
-    email: string;
-    phone_number: string;
-    role: string;
-    date_of_birth?: string; 
-    avatar_url?: string;
+interface UserProfilePageProps {
+  cartCount: number;
 }
 
-// --- COMPONENT ---
-export default function UserProfilePage() {
-    const { isAuthenticated, logout } = useAuth();
-    const navigate = useNavigate();
+export function UserProfilePage({ cartCount }: UserProfilePageProps) {
+  const navigate = useNavigate();
+  const { logout } = useAuth(); 
+  
+  // ✅ FIX LỖI 1: Lấy token trực tiếp từ localStorage vì useAuth không trả về token
+  const token = localStorage.getItem('token'); 
+
+  // ✅ Đã bỏ 'payment' và 'wishlist' khỏi danh sách tab
+  const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'addresses' | 'warranty' | 'settings'>('profile');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // --- STATE DATA ---
+  const [profile, setProfile] = useState<UserProfileData | null>(null);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
+
+  // State thêm địa chỉ
+  const [isAddingAddress, setIsAddingAddress] = useState(false);
+  const [newAddress, setNewAddress] = useState({
+    recipient_name: '', phone_number: '', address: '', 
+    district: '', city: '', country: 'Vietnam', is_default: false
+  });
+
+  // ✅ STATE CHO ĐỔI MẬT KHẨU
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  const getAuthHeaders = () => ({ headers: { Authorization: `Bearer ${token}` } });
+
+  // --- HELPERS ---
+  const formatPrice = (price: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+  const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('vi-VN') : '';
+  const getStatusColor = (s: string) => {
+    if(s === 'Đang giao') return 'bg-blue-500/20 text-blue-500';
+    if(s === 'Đã giao') return 'bg-green-500/20 text-green-500';
+    if(s === 'Đã hủy') return 'bg-red-500/20 text-red-500';
+    return 'bg-gray-500/20 text-gray-500';
+  };
+
+  // --- FETCH DATA ---
+  const fetchProfileAndAddress = async () => {
+    if (!token) return;
+    try {
+      const [profileRes, addressRes] = await Promise.all([
+        axios.get(`${API_URL}/users/profile`, getAuthHeaders()),
+        axios.get(`${API_URL}/users/addresses`, getAuthHeaders())
+      ]);
+      if (profileRes.data.success) {
+        const u = profileRes.data.data;
+        // Format ngày sinh YYYY-MM-DD để hiển thị đúng trong input date
+        if (u.date_of_birth) u.date_of_birth = u.date_of_birth.split('T')[0];
+        setProfile(u);
+      }
+      if (addressRes.data.success) setAddresses(addressRes.data.data);
+    } catch (error: any) {
+      if (error.response?.status === 401) { logout(); navigate('/login'); }
+    }
+  };
+
+  const fetchOrders = async () => {
+    if (!token) return;
+    try {
+      const res = await axios.get(`${API_URL}/orders`, getAuthHeaders());
+      if (res.data.success) setOrders(res.data.data);
+    } catch (e) { console.error(e); }
+  };
+
+  useEffect(() => {
+    if (!token) { navigate('/login'); return; }
+    // Gọi API ngay khi vào trang để lấp đầy dữ liệu vào ô trống
+    if (activeTab === 'profile' || activeTab === 'addresses') fetchProfileAndAddress();
+    if (activeTab === 'orders') fetchOrders();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, activeTab]);
+
+  // --- HANDLERS PROFILE ---
+  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (profile) setProfile({ ...profile, [e.target.name]: e.target.value });
+  };
+
+  const handleUpdateProfile = async () => {
+    try {
+      setIsLoading(true);
+      await axios.put(`${API_URL}/users/profile`, {
+        name: profile?.name, phone_number: profile?.phone_number, date_of_birth: profile?.date_of_birth
+      }, getAuthHeaders());
+      toast.success("Cập nhật thông tin thành công!");
+    } catch { toast.error("Lỗi cập nhật."); } finally { setIsLoading(false); }
+  };
+
+  // --- HANDLERS ADDRESS ---
+  const handleDeleteAddress = async (id: number) => {
+    if (!confirm("Xóa địa chỉ này?")) return;
+    try {
+      await axios.delete(`${API_URL}/users/addresses/${id}`, getAuthHeaders());
+      setAddresses(p => p.filter(a => a.address_id !== id));
+      toast.success("Đã xóa.");
+    } catch { toast.error("Lỗi xóa."); }
+  };
+
+  const handleSetDefaultAddress = async (id: number) => {
+    try {
+      await axios.put(`${API_URL}/users/addresses/${id}/default`, {}, getAuthHeaders());
+      setAddresses(p => p.map(a => ({ ...a, is_default: a.address_id === id ? 1 : 0 })));
+      toast.success("Đã đặt mặc định.");
+    } catch { toast.error("Lỗi."); }
+  };
+
+  const handleAddAddress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await axios.post(`${API_URL}/users/addresses`, newAddress, getAuthHeaders());
+      if (res.data.success) {
+        toast.success("Thêm thành công");
+        setIsAddingAddress(false);
+        fetchProfileAndAddress();
+        setNewAddress({ recipient_name: '', phone_number: '', address: '', district: '', city: '', country: 'VN', is_default: false });
+      }
+    } catch { toast.error("Lỗi thêm địa chỉ."); }
+  };
+
+  // --- HANDLER ORDER ---
+  const handleViewOrderDetail = async (id: number) => {
+    try {
+      setIsLoading(true);
+      const res = await axios.get(`${API_URL}/orders/${id}`, getAuthHeaders());
+      if (res.data.success) setSelectedOrder(res.data.data);
+    } catch { toast.error("Lỗi xem chi tiết."); } finally { setIsLoading(false); }
+  };
+
+  // --- HANDLER PASSWORD ---
+  const handleChangePassword = async () => {
+    const { currentPassword, newPassword, confirmPassword } = passwordData;
     
-    // Axios instance với Token
-    const api = axios.create({ 
-        baseURL: API_URL, 
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    });
-
-    // State quản lý Tabs
-    const [activeTab, setActiveTab] = useState<'profile' | 'addresses' | 'orders'>('profile');
-    
-    // State dữ liệu
-    const [profile, setProfile] = useState<UserProfile | null>(null);
-    const [addresses, setAddresses] = useState<Address[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    // State Form Profile & Password
-    const [formData, setFormData] = useState({
-        name: '',
-        phone_number: '',
-        date_of_birth: '',
-        avatar_url: '',
-        current_password: '',
-        new_password: '',
-        confirm_password: ''
-    });
-
-    // State Form Thêm Địa chỉ
-    const [showAddAddress, setShowAddAddress] = useState(false);
-    const [addressForm, setAddressForm] = useState({
-        recipient_name: '',
-        phone_number: '',
-        address: '',
-        district: '',
-        city: '',
-        country: 'Việt Nam',
-        is_default: false
-    });
-
-    // --- 1. FETCH DATA ---
-    useEffect(() => {
-        if (!isAuthenticated) { navigate('/login'); return; }
-        
-        const fetchData = async () => {
-            try {
-                const [profileRes, addressRes] = await Promise.all([
-                    api.get('/users/profile'),
-                    api.get('/users/addresses')
-                ]);
-
-                const userData = profileRes.data.data;
-                setProfile(userData);
-                setAddresses(addressRes.data.data || []);
-
-                // Fill dữ liệu vào form
-                setFormData(prev => ({
-                    ...prev,
-                    name: userData.name || '',
-                    phone_number: userData.phone_number || '',
-                    date_of_birth: userData.date_of_birth || '',
-                    avatar_url: userData.avatar_url || ''
-                }));
-
-            } catch (error: any) {
-                if (error.response?.status === 401) logout();
-                toast.error("Không thể tải thông tin người dùng");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, [isAuthenticated]);
-
-    // --- 2. LOGIC CẬP NHẬT PROFILE & PASSWORD ---
-    const handleUpdateProfile = async (e: FormEvent) => {
-        e.preventDefault();
-        const { current_password, new_password, confirm_password, ...profileInfo } = formData;
-
-        try {
-            // A. Cập nhật thông tin chung
-            // Build payload with only editable fields to avoid sending empty or unwanted keys
-            const payload: any = {
-                name: (profileInfo.name || '').trim() || undefined,
-                phone_number: (profileInfo.phone_number || '').trim() || undefined,
-                date_of_birth: profileInfo.date_of_birth || undefined,
-                avatar_url: profileInfo.avatar_url || undefined,
-            };
-            // Remove undefined keys
-            Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
-
-            await api.put('/users/profile', payload); // ensure backend accepts these fields
-            
-            // B. Đổi mật khẩu (nếu có nhập)
-            if (current_password || new_password) {
-                if (new_password !== confirm_password) {
-                    toast.error("Mật khẩu xác nhận không khớp!");
-                    return;
-                }
-                if (!current_password) {
-                    toast.error("Vui lòng nhập mật khẩu hiện tại để thay đổi.");
-                    return;
-                }
-                // Gọi API đổi mật khẩu (Giả định route)
-                await api.put('/users/change-password', { 
-                    currentPassword: current_password, 
-                    newPassword: new_password 
-                });
-            }
-
-            toast.success("Cập nhật hồ sơ thành công!");
-            // Reset password fields
-            setFormData(prev => ({ ...prev, current_password: '', new_password: '', confirm_password: '' }));
-
-            // Refresh profile
-            const refreshed = await api.get('/users/profile');
-            setProfile(refreshed.data.data);
-            setFormData(prev => ({ ...prev, avatar_url: refreshed.data.data.avatar_url || '' }));
-
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || "Lỗi khi cập nhật hồ sơ");
-        }
-    };
-
-    // --- 2b. Avatar file handling (convert to base64 and store in avatar_url)
-    const handleAvatarFile = (file?: File) => {
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-            const result = reader.result as string
-            // store base64 as avatar_url (backend should accept or you can implement upload endpoint)
-            setFormData(prev => ({ ...prev, avatar_url: result }));
-        };
-        reader.readAsDataURL(file);
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Mật khẩu mới không khớp");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("Mật khẩu mới phải có ít nhất 6 ký tự");
+      return;
     }
 
-    // --- 3. LOGIC THÊM ĐỊA CHỈ ---
-    const handleAddAddress = async (e: FormEvent) => {
-        e.preventDefault();
-        try {
-            const res = await api.post('/users/addresses', addressForm);
-            if (res.data.success) {
-                toast.success("Thêm địa chỉ thành công!");
-                const newAddr = { ...addressForm, address_id: res.data.addressId } as Address;
-                // If new is default, unset other defaults locally
-                if (newAddr.is_default) {
-                    setAddresses(prev => prev.map(a => ({ ...a, is_default: false })).concat(newAddr));
-                } else {
-                    setAddresses(prev => [...prev, newAddr]);
-                }
-                setShowAddAddress(false); // Đóng form
-                setAddressForm({ recipient_name: '', phone_number: '', address: '', district: '', city: '', country: 'Việt Nam', is_default: false }); // Reset form
-            }
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || "Lỗi thêm địa chỉ");
-        }
-    };
+    try {
+      setIsLoading(true);
+      // Gọi API đổi mật khẩu
+      const res = await axios.put(`${API_URL}/users/change-password`, {
+        currentPassword,
+        newPassword
+      }, getAuthHeaders());
 
-    // --- 4. LOGIC XÓA ĐỊA CHỈ ---
-    const handleDeleteAddress = async (id: number) => {
-        if (!confirm('Bạn chắc chắn muốn xóa địa chỉ này?')) return;
-        try {
-            await api.delete(`/users/addresses/${id}`);
-            setAddresses(prev => prev.filter(a => a.address_id !== id));
-            toast.success("Đã xóa địa chỉ.");
-        } catch (error) {
-            toast.error("Lỗi xóa địa chỉ");
-        }
-    };
+      if (res.data.success) {
+        toast.success("Đổi mật khẩu thành công!");
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' }); // Reset form
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Đổi mật khẩu thất bại. Kiểm tra lại mật khẩu cũ.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    if (loading) return <div className="min-h-screen pt-24 flex items-center justify-center">Đang tải...</div>;
+  const handleLogout = () => {
+    if(confirm("Bạn chắc chắn muốn đăng xuất?")) { logout(); navigate('/'); }
+  };
 
-    return (
-        <div className="min-h-screen bg-gray-50 text-gray-900 font-inter">
-            <Navbar cartCount={0} />
-            <Toaster position="top-right" />
+  const tabs = [
+    { id: 'profile' as const, name: 'Thông tin cá nhân', icon: <User className="w-5 h-5" /> },
+    { id: 'orders' as const, name: 'Đơn hàng', icon: <Package className="w-5 h-5" /> },
+    { id: 'addresses' as const, name: 'Địa chỉ', icon: <MapPin className="w-5 h-5" /> },
+    { id: 'warranty' as const, name: 'Bảo hành', icon: <Shield className="w-5 h-5" /> },
+    { id: 'settings' as const, name: 'Cài đặt', icon: <Settings className="w-5 h-5" /> },
+  ];
 
-            <main className="pt-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+  if (!token) return null;
+  
+  // Hiển thị Loading khi chưa lấy được dữ liệu profile để tránh form bị trống
+  if (!profile && activeTab === 'profile') return <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-white">Đang tải thông tin...</div>;
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] text-white">
+      {/* ✅ FIX LỖI 2: Chỉ truyền cartCount, không truyền các hàm navigate cũ */}
+      <Navbar cartCount={cartCount} />
+      
+      <main className="pt-20 pb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <h1 className="text-3xl mb-8">Tài Khoản</h1>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Sidebar hiển thị thông tin User */}
+            <div className="lg:col-span-1">
+              <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-6 sticky top-24">
+                <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-800">
+                  <div className="w-16 h-16 bg-[#007AFF] rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg">
+                    {profile?.name ? profile.name.charAt(0).toUpperCase() : <User className="w-8 h-8"/>}
+                  </div>
+                  <div className="overflow-hidden">
+                    <h3 className="font-bold text-lg truncate text-white">{profile?.name || 'Tài khoản'}</h3>
+                    <p className="text-sm text-gray-400 truncate">{profile?.email}</p>
+                  </div>
+                </div>
+                <nav className="space-y-1">
+                  {tabs.map((tab) => (
+                    <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${activeTab === tab.id ? 'bg-[#007AFF] text-white shadow-md' : 'text-gray-400 hover:bg-[#1f1f1f] hover:text-white'}`}>
+                      {tab.icon} <span>{tab.name}</span>
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="lg:col-span-3">
+              
+              {/* === PROFILE (Thông tin cá nhân & Sửa đổi) === */}
+              {activeTab === 'profile' && profile && (
+                <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-8 animate-in fade-in">
+                  <h2 className="text-2xl mb-6 font-bold">Thông Tin Cá Nhân</h2>
+                  {/* ✅ INPUT ĐÃ ĐƯỢC GẮN VALUE TỪ STATE */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-gray-400 mb-2 text-sm">Họ và tên</label>
+                        <input name="name" value={profile.name||''} onChange={handleProfileChange} className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-4 py-3 focus:border-[#007AFF] outline-none transition-colors"/>
+                    </div>
+                    <div>
+                        <label className="block text-gray-400 mb-2 text-sm">Email</label>
+                        <input value={profile.email} disabled className="w-full bg-[#111] border border-gray-800 rounded-lg px-4 py-3 text-gray-500 cursor-not-allowed"/>
+                    </div>
+                    <div>
+                        <label className="block text-gray-400 mb-2 text-sm">Số điện thoại</label>
+                        <input name="phone_number" value={profile.phone_number||''} onChange={handleProfileChange} className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-4 py-3 focus:border-[#007AFF] outline-none transition-colors"/>
+                    </div>
+                    <div>
+                        <label className="block text-gray-400 mb-2 text-sm">Ngày sinh</label>
+                        <input type="date" name="date_of_birth" value={profile.date_of_birth||''} onChange={handleProfileChange} className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-4 py-3 focus:border-[#007AFF] outline-none transition-colors"/>
+                    </div>
+                  </div>
+                  <button onClick={handleUpdateProfile} disabled={isLoading} className="mt-8 px-8 py-3 bg-[#007AFF] rounded-lg hover:bg-[#0062cc] transition-colors font-medium disabled:opacity-50">
+                    {isLoading ? 'Đang lưu...' : 'Lưu thay đổi'}
+                  </button>
+                </div>
+              )}
+
+              {/* === ORDERS === */}
+              {activeTab === 'orders' && (
+                <div className="space-y-4 animate-in fade-in">
+                  {selectedOrder ? (
+                    <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-6">
+                      <button onClick={()=>setSelectedOrder(null)} className="mb-6 flex items-center gap-2 text-gray-400 hover:text-[#007AFF] transition-colors">← Quay lại danh sách</button>
+                      <div className="flex justify-between items-start border-b border-gray-800 pb-6 mb-6">
+                        <div><h2 className="text-xl font-bold mb-1">Đơn hàng #{selectedOrder.order_id}</h2><p className="text-gray-400 text-sm">{formatDate(selectedOrder.createdAt)}</p></div>
+                        <span className={`px-4 py-2 rounded-full font-medium text-sm ${getStatusColor(selectedOrder.status)}`}>{selectedOrder.status}</span>
+                      </div>
+                      <div className="space-y-4">
+                        {selectedOrder.items.map(i => (
+                          <div key={i.item_id} className="flex gap-4 bg-[#0a0a0a] p-4 rounded-xl border border-gray-800/50">
+                            <div className="w-20 h-20 bg-white rounded-lg overflow-hidden flex-shrink-0 p-1"><img src={i.product_image} className="w-full h-full object-contain"/></div>
+                            <div><p className="font-medium text-lg">{i.product_name}</p><p className="text-gray-400">Số lượng: {i.quantity}</p><p className="text-[#007AFF] font-medium">{formatPrice(i.price_at_order)}</p></div>
+                          </div>
+                        ))}
+                        <div className="pt-4 border-t border-gray-800 flex justify-between items-center"><span className="text-gray-400">Tổng cộng:</span><span className="text-[#007AFF] font-bold text-2xl">{formatPrice(selectedOrder.final_amount)}</span></div>
+                      </div>
+                    </div>
+                  ) : (
+                    orders.length === 0 ? <div className="text-center py-12 text-gray-500 bg-[#1a1a1a] rounded-2xl border border-gray-800">Bạn chưa có đơn hàng nào.</div> :
+                    orders.map(o => (
+                      <div key={o.order_id} className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-center gap-4 hover:border-gray-600 transition-colors">
+                        <div><h3 className="font-bold text-lg">Đơn #{o.order_id}</h3><p className="text-sm text-gray-400">{formatDate(o.createdAt)}</p></div>
+                        <div className="flex items-center gap-4"><span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(o.status)}`}>{o.status}</span><p className="font-bold text-[#007AFF]">{formatPrice(o.final_amount)}</p><button onClick={()=>handleViewOrderDetail(o.order_id)} className="p-2 hover:bg-white/10 rounded-lg"><Eye className="w-5 h-5"/></button></div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {/* === ADDRESSES === */}
+              {activeTab === 'addresses' && (
+                <div className="space-y-4 animate-in fade-in">
+                  {isAddingAddress ? (
+                    <div className="bg-[#1a1a1a] border border-gray-800 p-6 rounded-2xl">
+                       <div className="flex justify-between mb-6"><h3 className="text-xl font-bold">Thêm địa chỉ mới</h3><button onClick={()=>setIsAddingAddress(false)}><X/></button></div>
+                       <form onSubmit={handleAddAddress} className="grid gap-4 md:grid-cols-2">
+                         <input placeholder="Tên người nhận" value={newAddress.recipient_name} onChange={e=>setNewAddress({...newAddress, recipient_name: e.target.value})} className="bg-[#0a0a0a] border border-gray-700 p-3 rounded-lg outline-none focus:border-[#007AFF]" required/>
+                         <input placeholder="Số điện thoại" value={newAddress.phone_number} onChange={e=>setNewAddress({...newAddress, phone_number: e.target.value})} className="bg-[#0a0a0a] border border-gray-700 p-3 rounded-lg outline-none focus:border-[#007AFF]" required/>
+                         <input placeholder="Địa chỉ cụ thể" value={newAddress.address} onChange={e=>setNewAddress({...newAddress, address: e.target.value})} className="md:col-span-2 bg-[#0a0a0a] border border-gray-700 p-3 rounded-lg outline-none focus:border-[#007AFF]" required/>
+                         <input placeholder="Quận/Huyện" value={newAddress.district} onChange={e=>setNewAddress({...newAddress, district: e.target.value})} className="bg-[#0a0a0a] border border-gray-700 p-3 rounded-lg outline-none focus:border-[#007AFF]" required/>
+                         <input placeholder="Tỉnh/Thành phố" value={newAddress.city} onChange={e=>setNewAddress({...newAddress, city: e.target.value})} className="bg-[#0a0a0a] border border-gray-700 p-3 rounded-lg outline-none focus:border-[#007AFF]" required/>
+                         <div className="md:col-span-2 flex gap-3 mt-2"><button type="submit" className="px-6 py-2 bg-[#007AFF] rounded-lg hover:bg-[#0062cc]">Lưu địa chỉ</button></div>
+                       </form>
+                    </div>
+                  ) : (
+                    <button onClick={()=>setIsAddingAddress(true)} className="w-full py-4 border-2 border-dashed border-gray-800 text-gray-400 rounded-2xl hover:border-[#007AFF] hover:text-[#007AFF] transition-colors flex items-center justify-center gap-2"><Plus/> Thêm địa chỉ mới</button>
+                  )}
+                  {addresses.map(a => (
+                    <div key={a.address_id} className={`bg-[#1a1a1a] border ${a.is_default ? 'border-[#007AFF]/50' : 'border-gray-800'} p-6 rounded-2xl relative`}>
+                      <div className="pr-10">
+                        <p className="font-bold text-lg mb-1">{a.recipient_name} {a.is_default===1 && <span className="ml-2 text-[#007AFF] text-xs bg-[#007AFF]/10 px-2 py-0.5 rounded border border-[#007AFF]/20">Mặc định</span>}</p>
+                        <p className="text-gray-400 text-sm">{a.phone_number}</p>
+                        <p className="text-gray-300 mt-2">{a.address}, {a.district}, {a.city}</p>
+                      </div>
+                      <div className="absolute top-6 right-6 flex flex-col gap-2">
+                        <button onClick={()=>handleDeleteAddress(a.address_id)} className="text-gray-500 hover:text-red-500 p-2"><Trash2 className="w-5 h-5"/></button>
+                      </div>
+                      {a.is_default===0 && <div className="mt-4 pt-4 border-t border-gray-800"><button onClick={()=>handleSetDefaultAddress(a.address_id)} className="text-sm px-3 py-1.5 border border-gray-700 rounded hover:bg-white/10 transition-colors">Đặt làm mặc định</button></div>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* === WARRANTY === */}
+              {activeTab === 'warranty' && <div className="text-center text-gray-500 py-12 bg-[#1a1a1a] rounded-2xl border border-gray-800">Chức năng bảo hành đang cập nhật.</div>}
+
+              {/* === SETTINGS (ĐỔI MẬT KHẨU) === */}
+              {activeTab === 'settings' && (
+                 <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-8 animate-in fade-in">
+                    <h2 className="text-2xl mb-6 font-bold">Cài Đặt Tài Khoản</h2>
                     
-                    {/* ================= SIDEBAR (LEFT) ================= */}
-                    <aside className="lg:col-span-3 self-start">
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden sticky top-24 w-full max-w-[260px]">
-                            {/* Avatar Section */}
-                            <div className="p-6 flex flex-col items-center border-b border-gray-100">
-                                <div className="relative mb-3">
-                                    <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-500 overflow-hidden">
-                                        {profile?.avatar_url || formData.avatar_url ? (
-                                            <img src={profile?.avatar_url || formData.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <span>{profile?.name?.[0]?.toUpperCase() || 'A'}</span>
-                                        )}
-                                    </div>
-                                </div>
-                                <h3 className="font-bold text-gray-900">{profile?.name}</h3>
-                                <p className="text-sm text-gray-500">{profile?.email}</p>
+                    {/* ✅ FORM ĐỔI MẬT KHẨU HOÀN CHỈNH */}
+                    <div className="mb-8">
+                        <h3 className="text-lg font-medium mb-4 flex items-center gap-2"><Lock className="w-5 h-5 text-[#007AFF]"/> Đổi mật khẩu</h3>
+                        <div className="space-y-4 max-w-lg">
+                            <div>
+                                <input 
+                                    type="password" 
+                                    placeholder="Mật khẩu hiện tại" 
+                                    className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-4 py-3 focus:border-[#007AFF] outline-none transition-colors"
+                                    value={passwordData.currentPassword}
+                                    onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
+                                />
                             </div>
-                            
-                            {/* Menu */}
-                            <nav className="p-2">
-                                <button 
-                                    onClick={() => setActiveTab('profile')}
-                                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-md transition-colors ${activeTab === 'profile' ? 'text-red-600 bg-red-50' : 'text-gray-600 hover:bg-gray-50'}`}
-                                >
-                                    <User className="w-4 h-4"/> Thông tin tài khoản
-                                </button>
-                                <button 
-                                    onClick={() => setActiveTab('addresses')}
-                                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-md transition-colors ${activeTab === 'addresses' ? 'text-red-600 bg-red-50' : 'text-gray-600 hover:bg-gray-50'}`}
-                                >
-                                    <MapPin className="w-4 h-4"/> Địa chỉ giao hàng
-                                </button>
-                                <button 
-                                    onClick={() => setActiveTab('orders')}
-                                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-md transition-colors ${activeTab === 'orders' ? 'text-red-600 bg-red-50' : 'text-gray-600 hover:bg-gray-50'}`}
-                                >
-                                    <ShoppingCart className="w-4 h-4"/> Đơn hàng
-                                </button>
-                                <button 
-                                    onClick={() => { logout(); navigate('/'); }}
-                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-md transition-colors mt-2"
-                                >
-                                    <LogOut className="w-4 h-4"/> Đăng xuất
-                                </button>
-                            </nav>
-                        </div>
-                    </aside>
-
-                    {/* ================= CONTENT (RIGHT) ================= */}
-                    <div className="lg:col-span-9">
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <div className="border border-gray-100 rounded p-6">
-                            {/* --- TAB 1: THÔNG TIN TÀI KHOẢN (Theo bố cục ảnh) --- */}
-                            {activeTab === 'profile' && (
-                                <form onSubmit={handleUpdateProfile}>
-                                    <h2 className="text-xl font-bold text-gray-900 mb-6 pb-2 border-b border-gray-100">Thông tin tài khoản</h2>
-                                    
-                                    {/* Hàng 1: Họ tên & Email */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium text-gray-700">Họ và tên</label>
-                                            <input 
-                                                type="text" 
-                                                value={formData.name} 
-                                                onChange={(e) => setFormData({...formData, name: e.target.value})}
-                                                className="w-full h-10 px-3 rounded border border-gray-300 focus:ring-1 focus:ring-blue-500 outline-none"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium text-gray-700">Email</label>
-                                            <input 
-                                                type="email" 
-                                                value={profile?.email} 
-                                                disabled 
-                                                className="w-full h-10 px-3 rounded border border-gray-200 bg-gray-100 text-gray-500"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Hàng 2: SĐT & Ngày sinh */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium text-gray-700">Số điện thoại</label>
-                                            <input 
-                                                type="tel" 
-                                                value={formData.phone_number} 
-                                                onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
-                                                className="w-full h-10 px-3 rounded border border-gray-300 focus:ring-1 focus:ring-blue-500 outline-none"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium text-gray-700">Ngày sinh</label>
-                                            <div className="relative">
-                                                <input 
-                                                    type="date" 
-                                                    value={formData.date_of_birth} 
-                                                    onChange={(e) => setFormData({...formData, date_of_birth: e.target.value})}
-                                                    className="w-full h-10 px-3 rounded border border-gray-300 focus:ring-1 focus:ring-blue-500 outline-none"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Hàng 3: Ảnh đại diện (Điểm tích lũy đã bỏ) */}
-                                    <div className="mb-8">
-                                        <label className="text-sm font-medium text-gray-700 block mb-2">Ảnh đại diện</label>
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200 overflow-hidden">
-                                                {formData.avatar_url ? (
-                                                    <img src={formData.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <User className="w-8 h-8 text-gray-400"/>
-                                                )}
-                                            </div>
-                                            <div className="flex flex-col gap-2">
-                                                <label className="cursor-pointer px-3 py-2 bg-white border border-gray-300 rounded text-sm font-medium hover:bg-gray-50 transition-colors inline-flex items-center gap-2">
-                                                    <Camera className="w-4 h-4"/> Chọn tệp
-                                                    <input type="file" className="hidden" accept="image/*" onChange={e => handleAvatarFile(e.target.files?.[0])} />
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="Hoặc dán URL ảnh"
-                                                    value={formData.avatar_url}
-                                                    onChange={e => setFormData(prev => ({ ...prev, avatar_url: e.target.value }))}
-                                                    className="w-64 px-3 py-2 rounded border border-gray-300 bg-white text-sm"
-                                                />
-                                                <span className="text-xs text-gray-500">Chọn một tệp hình ảnh hoặc nhập URL ảnh</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Phần Đổi Mật Khẩu (Liền mạch theo ảnh) */}
-                                    <div className="pt-2">
-                                        <h3 className="text-lg font-bold text-gray-900 mb-1">Đổi mật khẩu</h3>
-                                        <p className="text-sm text-red-500 mb-4 italic">Để trống nếu bạn không muốn thay đổi mật khẩu.</p>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="md:col-span-1 space-y-2">
-                                                <label className="text-sm font-medium text-gray-700">Mật khẩu hiện tại</label>
-                                                <input 
-                                                    type="password" 
-                                                    value={formData.current_password}
-                                                    onChange={(e) => setFormData({...formData, current_password: e.target.value})}
-                                                    className="w-full h-10 px-3 rounded border border-gray-300 focus:ring-1 focus:ring-blue-500 outline-none"
-                                                />
-                                            </div>
-                                            {/* Spacer để giống layout 2 cột lệch */}
-                                            <div className="hidden md:block"></div> 
-
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium text-gray-700">Mật khẩu mới</label>
-                                                <input 
-                                                    type="password" 
-                                                    value={formData.new_password}
-                                                    onChange={(e) => setFormData({...formData, new_password: e.target.value})}
-                                                    className="w-full h-10 px-3 rounded border border-gray-300 focus:ring-1 focus:ring-blue-500 outline-none"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium text-gray-700">Xác nhận mật khẩu mới</label>
-                                                <input 
-                                                    type="password" 
-                                                    value={formData.confirm_password}
-                                                    onChange={(e) => setFormData({...formData, confirm_password: e.target.value})}
-                                                    className="w-full h-10 px-3 rounded border border-gray-300 focus:ring-1 focus:ring-blue-500 outline-none"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Nút Submit (Góc phải dưới) */}
-                                    <div className="mt-8 flex justify-end">
-                                        <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 h-10 text-sm font-medium rounded shadow-sm">
-                                            Cập nhật thông tin
-                                        </Button>
-                                    </div>
-                                </form>
-                            )}
-
-                            {/* --- TAB 2: QUẢN LÝ ĐỊA CHỈ (Có Form Thêm) --- */}
-                            {activeTab === 'addresses' && (
-                                <div>
-                                    <div className='flex justify-between items-center mb-6 pb-4 border-b border-gray-100'>
-                                        <h2 className="text-xl font-bold text-gray-900">Địa chỉ giao hàng</h2>
-                                        <Button onClick={() => setShowAddAddress(!showAddAddress)} className='bg-blue-600 hover:bg-blue-700 text-white gap-2 h-9 text-sm'>
-                                            <Plus className='w-4 h-4'/> {showAddAddress ? 'Đóng' : 'Thêm địa chỉ'}
-                                        </Button>
-                                    </div>
-
-                                    {/* Form Thêm Địa Chỉ (Ẩn/Hiện) */}
-                                    {showAddAddress && (
-                                        <form onSubmit={handleAddAddress} className="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200 animate-in fade-in">
-                                            <h3 className="font-semibold mb-4 text-gray-800">Thêm địa chỉ mới</h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                                <input required type="text" placeholder="Tên người nhận" value={addressForm.recipient_name} onChange={e => setAddressForm({...addressForm, recipient_name: e.target.value})} className="p-2 border rounded" />
-                                                <input required type="tel" placeholder="Số điện thoại" value={addressForm.phone_number} onChange={e => setAddressForm({...addressForm, phone_number: e.target.value})} className="p-2 border rounded" />
-                                                <input required type="text" placeholder="Địa chỉ chi tiết (Số nhà, đường...)" value={addressForm.address} onChange={e => setAddressForm({...addressForm, address: e.target.value})} className="p-2 border rounded md:col-span-2" />
-                                                <input required type="text" placeholder="Quận/Huyện" value={addressForm.district} onChange={e => setAddressForm({...addressForm, district: e.target.value})} className="p-2 border rounded" />
-                                                <input required type="text" placeholder="Tỉnh/Thành phố" value={addressForm.city} onChange={e => setAddressForm({...addressForm, city: e.target.value})} className="p-2 border rounded" />
-                                            </div>
-                                            <div className="flex items-center gap-2 mb-4">
-                                                <input type="checkbox" id="default" checked={addressForm.is_default} onChange={e => setAddressForm({...addressForm, is_default: e.target.checked})} />
-                                                <label htmlFor="default" className="text-sm text-gray-700">Đặt làm địa chỉ mặc định</label>
-                                            </div>
-                                            <div className="flex justify-end">
-                                                <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white">Lưu địa chỉ</Button>
-                                            </div>
-                                        </form>
-                                    )}
-                                    
-                                    {/* Danh sách địa chỉ */}
-                                    <div className="space-y-4">
-                                        {addresses.map((addr) => (
-                                            <div key={addr.address_id} className="p-4 border border-gray-200 rounded-lg flex justify-between items-start bg-white">
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-bold text-gray-900">{addr.recipient_name}</span>
-                                                        {addr.is_default && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Mặc định</span>}
-                                                    </div>
-                                                    <p className="text-sm text-gray-600 mt-1">SĐT: {addr.phone_number}</p>
-                                                    <p className="text-sm text-gray-600 mt-1">{addr.address}, {addr.district}, {addr.city}</p>
-                                                </div>
-                                                <button onClick={() => handleDeleteAddress(addr.address_id)} className="text-gray-400 hover:text-red-500 p-1">
-                                                    <Trash2 className="w-5 h-5"/>
-                                                </button>
-                                            </div>
-                                        ))}
-                                        {addresses.length === 0 && !showAddAddress && (
-                                            <div className="text-center py-8 text-gray-500">Chưa có địa chỉ nào.</div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* --- TAB 3: ĐƠN HÀNG --- */}
-                            {activeTab === 'orders' && (
-                                <div className="text-center py-16 text-gray-500">
-                                    <ShoppingCart className="w-12 h-12 mx-auto mb-3 text-gray-300"/>
-                                    <p>Chức năng đang phát triển</p>
-                                </div>
-                            )}
+                            <div>
+                                <input 
+                                    type="password" 
+                                    placeholder="Mật khẩu mới" 
+                                    className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-4 py-3 focus:border-[#007AFF] outline-none transition-colors"
+                                    value={passwordData.newPassword}
+                                    onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
+                                />
                             </div>
+                            <div>
+                                <input 
+                                    type="password" 
+                                    placeholder="Xác nhận mật khẩu mới" 
+                                    className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-4 py-3 focus:border-[#007AFF] outline-none transition-colors"
+                                    value={passwordData.confirmPassword}
+                                    onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                                />
+                            </div>
+                            <button 
+                                onClick={handleChangePassword}
+                                disabled={isLoading}
+                                className="px-6 py-2 bg-[#007AFF] rounded-lg hover:bg-[#0062cc] transition-colors font-medium flex items-center gap-2 disabled:opacity-50"
+                            >
+                                <Key className="w-4 h-4" /> {isLoading ? 'Đang xử lý...' : 'Cập nhật mật khẩu'}
+                            </button>
                         </div>
                     </div>
-                </div>
-            </main>
-            <Footer />
+
+                    {/* Đăng xuất */}
+                    <div className="pt-8 border-t border-gray-800">
+                      <h3 className="text-lg font-medium mb-2 text-red-500">Khu vực nguy hiểm</h3>
+                      <button onClick={handleLogout} className="flex items-center gap-2 text-red-500 border border-red-500/20 bg-red-500/10 px-6 py-3 rounded-lg hover:bg-red-500/20 transition-all">
+                        <LogOut className="w-5 h-5"/> Đăng xuất khỏi thiết bị
+                      </button>
+                    </div>
+                 </div>
+              )}
+
+            </div>
+          </div>
         </div>
-    );
+      </main>
+      <Footer />
+      <Toaster position="top-right" theme="dark" />
+    </div>
+  );
 }
