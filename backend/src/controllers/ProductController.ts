@@ -1,164 +1,92 @@
 import { Request, Response } from 'express';
-import * as ProductModel from '../models/ProductModel'; // Import toàn bộ module để tránh trùng tên
+import {
+    createProduct,
+    addProductImage,
+    updateProduct,
+    deleteProduct,
+    findAllProducts,
+    findProductById,
+    CreateProductData,
+    CreateProductImageData
+} from '../models/ProductModel';
 
-// ---------------------------------------------------------------------
-// PUBLIC READ OPERATIONS (GET)
-// ---------------------------------------------------------------------
-
-/**
- * [GET] /api/products - Lấy tất cả sản phẩm
- */
-export async function getAllProducts(req: Request, res: Response) {
-    try {
-        const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
-        const limit = req.query.limit ? parseInt(String(req.query.limit)) : 6;
-
-        if (q && q.length > 0) {
-            const products = await ProductModel.findProductsByKeyword(q, isNaN(limit) ? 6 : limit);
-            return res.status(200).json({ success: true, data: products });
-        }
-
-        const products = await ProductModel.findAllActiveProducts();
-        return res.status(200).json({ success: true, data: products });
-    } catch (error) {
-        console.error("Error fetching products:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Lỗi server khi lấy danh sách sản phẩm"
-        });
-    }
-}
-
-/**
- * [GET] /api/products/:id - Lấy sản phẩm theo ID (Đổi tên hàm)
- */
-export async function getProductDetails(req: Request, res: Response) {
-    try {
-        const id = parseInt(req.params.id);
-        if (isNaN(id) || id <= 0) return res.status(400).json({ success: false, message: "ID sản phẩm không hợp lệ" });
-
-        const product = await ProductModel.findProductById(id);
-        if (!product) return res.status(404).json({ success: false, message: "Không tìm thấy sản phẩm" });
-
-        // Lấy tất cả ảnh của sản phẩm (chính + phụ)
-        try {
-            const images = await ProductModel.findAllImagesByProductId(id);
-            // map to simple urls
-            (product as any).images = images.map(img => ({ image_id: img.image_id, url: img.url, is_main: !!img.is_main }));
-        } catch (imgErr) {
-            console.warn('Could not load product images', imgErr);
-            (product as any).images = [];
-        }
-
-        return res.status(200).json({ success: true, data: product });
-    } catch (error) {
-        console.error("Error fetching product:", error);
-        return res.status(500).json({ success: false, message: "Lỗi server" });
-    }
-}
-
-// ---------------------------------------------------------------------
-// ADMIN/STAFF CRUD OPERATIONS
-// ---------------------------------------------------------------------
-
-/**
- * [POST] /api/products/admin - Tạo sản phẩm mới
- */
+// Tạo sản phẩm mới
 export async function createNewProduct(req: Request, res: Response) {
     try {
-        // Lấy các trường bắt buộc, bao gồm cả các khóa ngoại
-        const { name, price, quantity, description, rating, code, brand_id, category_id, short_description } = req.body;
+        const { name, code, price, quantity, brand_id, category_id, description, short_description, image_url } = req.body;
 
-        // ⚠️ KIỂM TRA DỮ LIỆU BẮT BUỘC
-        if (!name || !price || !code || !brand_id || !category_id) {
-            return res.status(400).json({ success: false, message: "Thiếu dữ liệu bắt buộc (Tên, Giá, Mã, ID Thương hiệu, ID Danh mục)." });
+        if (!name || !code || !price || !brand_id || !category_id) {
+            return res.status(400).json({ success: false, message: 'Thiếu dữ liệu bắt buộc (Tên, Mã, Giá, ID thương hiệu, ID danh mục).' });
         }
-        
-        // Chuẩn bị dữ liệu cho Model
-        const productData: ProductModel.CreateProductData = {
-            name,
-            price,
-            quantity: quantity ?? 0,
-            description,
-            short_description,
-            code,
-            brand_id,
-            category_id
-        } as ProductModel.CreateProductData;
 
-        const insertId = await ProductModel.createProduct(productData);
+        const productData: CreateProductData = { name, code, price, quantity, brand_id, category_id, description, short_description };
+        const productId = await createProduct(productData);
 
-        return res.status(201).json({
-            success: true,
-            message: "Tạo sản phẩm thành công",
-            product_id: insertId
-        });
+        if (image_url) {
+            const imageData: CreateProductImageData = { product_id: productId, url: image_url, is_main: true };
+            await addProductImage(imageData);
+        }
 
+        return res.status(201).json({ success: true, message: 'Tạo sản phẩm thành công', product_id: productId });
     } catch (error: any) {
-        console.error("Error creating product:", error);
-        if (error.code === 'ER_DUP_ENTRY') {
-             return res.status(409).json({ success: false, message: 'Mã sản phẩm (code) đã tồn tại.' });
-        }
-        return res.status(500).json({ success: false, message: "Lỗi server khi tạo sản phẩm" });
+        console.error('Create product error:', error);
+        return res.status(500).json({ success: false, message: 'Lỗi server khi tạo sản phẩm' });
     }
 }
 
-/**
- * [PUT] /api/products/admin/:id - Cập nhật sản phẩm (Đổi tên hàm)
- */
+// Cập nhật sản phẩm
 export async function updateExistingProduct(req: Request, res: Response) {
     try {
-        const id = parseInt(req.params.id);
-        const data = req.body;
+        const id = Number(req.params.id);
+        const { name, price, quantity, brand_id, category_id, description, short_description, image_url } = req.body;
 
-        if (isNaN(id) || id <= 0) return res.status(400).json({ success: false, message: "ID sản phẩm không hợp lệ" });
-        
-        // Ngăn cập nhật trường code/id qua API PUT (trừ khi có logic riêng)
-        if (data.code || data.product_id) {
-             return res.status(400).json({ success: false, message: "Không thể thay đổi Mã sản phẩm hoặc ID." });
+        const updateData: Partial<CreateProductData> = { name, price, quantity, brand_id, category_id, description, short_description };
+        const affectedRows = await updateProduct(id, updateData);
+
+        if (image_url) {
+            const imageData: CreateProductImageData = { product_id: id, url: image_url, is_main: true };
+            await addProductImage(imageData);
         }
 
-        const affectedRows = await ProductModel.updateProduct(id, data as Partial<ProductModel.Product>);
-
-        if (affectedRows === 0) {
-            // Check nếu không có dòng nào bị ảnh hưởng, có thể là do không có gì thay đổi, hoặc ID sai.
-            const product = await ProductModel.findProductById(id);
-            if (!product) return res.status(404).json({ success: false, message: "Không tìm thấy sản phẩm để cập nhật" });
-            return res.status(200).json({ success: true, message: "Không có dữ liệu nào được thay đổi." });
-        }
-
-        return res.status(200).json({
-            success: true,
-            message: "Cập nhật sản phẩm thành công"
-        });
-
-    } catch (error) {
-        console.error("Error updating product:", error);
-        return res.status(500).json({ success: false, message: "Lỗi server khi cập nhật" });
+        return res.json({ success: true, message: 'Cập nhật sản phẩm thành công', affectedRows });
+    } catch (error: any) {
+        console.error('Update product error:', error);
+        return res.status(500).json({ success: false, message: 'Lỗi server khi cập nhật sản phẩm' });
     }
 }
 
-/**
- * [DELETE] /api/products/admin/:id - Xóa sản phẩm (Soft Delete)
- */
-export async function deleteProduct(req: Request, res: Response) {
+// Xóa sản phẩm
+export async function deleteExistingProduct(req: Request, res: Response) {
     try {
-        const id = parseInt(req.params.id);
+        const id = Number(req.params.id);
+        const affectedRows = await deleteProduct(id);
+        return res.json({ success: true, message: 'Xóa sản phẩm thành công', affectedRows });
+    } catch (error: any) {
+        console.error('Delete product error:', error);
+        return res.status(500).json({ success: false, message: 'Lỗi server khi xóa sản phẩm' });
+    }
+}
 
-        if (isNaN(id) || id <= 0) return res.status(400).json({ success: false, message: "ID sản phẩm không hợp lệ" });
+// Lấy tất cả sản phẩm
+export async function getAllProducts(req: Request, res: Response) {
+    try {
+        const products = await findAllProducts();
+        return res.json({ success: true, data: products });
+    } catch (error: any) {
+        console.error('Get products error:', error);
+        return res.status(500).json({ success: false, message: 'Lỗi server khi lấy sản phẩm' });
+    }
+}
 
-        const affectedRows = await ProductModel.deleteProduct(id);
-        if (affectedRows === 0) {
-            return res.status(404).json({ success: false, message: "Không tìm thấy sản phẩm để xóa" });
-        }
-
-        return res.status(200).json({
-            success: true,
-            message: "Xóa sản phẩm thành công (Soft Deleted)"
-        });
-
-    } catch (error) {
-        console.error("Error deleting product:", error);
-        return res.status(500).json({ success: false, message: "Lỗi server khi xóa sản phẩm" });
+// Lấy chi tiết sản phẩm
+export async function getProductById(req: Request, res: Response) {
+    try {
+        const id = Number(req.params.id);
+        const product = await findProductById(id);
+        if (!product) return res.status(404).json({ success: false, message: 'Sản phẩm không tồn tại' });
+        return res.json({ success: true, data: product });
+    } catch (error: any) {
+        console.error('Get product by id error:', error);
+        return res.status(500).json({ success: false, message: 'Lỗi server khi lấy sản phẩm' });
     }
 }
