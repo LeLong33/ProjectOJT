@@ -21,7 +21,7 @@ export default function App() {
         <HeroCarousel />
         <CategoryGrid />
         <FlashSale onAddToCart={handleAddToCart} />
-        <ProductShowcase onAddToCart={handleAddToCart} />
+        <ProductShowcase  />
       </main>
       
       <Footer />
