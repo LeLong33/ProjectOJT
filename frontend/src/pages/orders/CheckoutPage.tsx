@@ -125,41 +125,75 @@ export function CheckoutPage({ cartCount }: CheckoutPageProps) {
       setIsLoading(true);
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      // Payload sạch, không có ward
-      const payload = {
-  recipient_name: formData.fullName,
-  phone_number: formData.phone,
-  address: formData.address,
-  district: formData.district,
-  city: formData.city,
-  payment_method: formData.paymentMethod,
-  total_amount: total,
-  items: cart.map(item => ({
-      product_id: item.product_id,
-      quantity: item.quantity,
-      price: item.price
-  }))
-};
+      // ✅ CHUẨN BỊ PAYLOAD
+      const payload: any = {
+        payment_method: formData.paymentMethod,
+        total_amount: total,
+        items: cart.map(item => ({
+            product_id: item.product_id, 
+            quantity: item.quantity,
+            price: item.price
+        }))
+      };
+
+      // ✅ QUAN TRỌNG: Chỉ gửi address_id HOẶC thông tin địa chỉ đầy đủ
+      if (selectedAddressId !== 'new' && typeof selectedAddressId === 'number') {
+        // Trường hợp 1: Đã chọn địa chỉ có sẵn
+        payload.address_id = selectedAddressId;
+        console.log(`✅ Checkout with existing address ID: ${selectedAddressId}`);
+      } else {
+        // Trường hợp 2: Nhập địa chỉ mới
+        payload.recipient_name = formData.fullName;
+        payload.phone_number = formData.phone;
+        payload.address = formData.address;
+        payload.district = formData.district;
+        payload.city = formData.city;
+        console.log(`✅ Checkout with NEW address`);
+      }
+
+      console.log('📤 Sending order:', payload);
+
       const res = await axios.post(`${API_URL}/orders`, payload, { headers });
 
       if (res.data.success) {
-        toast.success("Đặt hàng thành công!");
-        clearCart(); 
+        const orderId = res.data.orderId;
         
-        // 👇 CHUYỂN HƯỚNG SANG TRANG SUCCESS
-        // Truyền state orderId để trang kia hiển thị
-        setTimeout(() => {
-            navigate('/order-confirmation', { state: { orderId: res.data.orderId } }); 
-        }, 1000);
+        // Nếu là chuyển khoản -> Gọi MoMo
+        if (formData.paymentMethod === 'transfer') {
+          toast.success("Đơn hàng đã tạo! Đang chuyển đến thanh toán...");
+          
+          try {
+            const paymentRes = await axios.post(`${API_URL}/payment/momo/create`, {
+              orderId,
+              amount: total
+            });
+
+            if (paymentRes.data.success) {
+              clearCart();
+              window.location.href = paymentRes.data.payUrl;
+            } else {
+              toast.error("Không thể tạo link thanh toán");
+            }
+          } catch (error) {
+            console.error(error);
+            toast.error("Lỗi kết nối MoMo");
+          }
+        } else {
+          // COD - hoàn tất
+          toast.success("Đặt hàng thành công!");
+          clearCart(); 
+          setTimeout(() => {
+            navigate('/order-confirmation', { state: { orderId } }); 
+          }, 500);
+        }
       }
-    } catch (error) {
-      console.error(error);
-      toast.error("Đặt hàng thất bại. Vui lòng thử lại.");
+    } catch (error: any) {
+      console.error('❌ Order error:', error);
+      toast.error(error.response?.data?.message || "Đặt hàng thất bại. Vui lòng thử lại.");
     } finally {
       setIsLoading(false);
     }
-  };
-
+};
   const steps = [
     { id: 1, name: 'Thông tin', icon: <MapPin className="w-5 h-5" /> },
     { id: 2, name: 'Vận chuyển', icon: <Truck className="w-5 h-5" /> },

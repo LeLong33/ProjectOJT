@@ -185,17 +185,50 @@ export const changePassword = async (req: Request, res: Response) => {
 }
 
 export const deleteAddress = async (req: Request, res: Response) => {
-    const addressId = parseInt(req.params.id);
     try {
-        const accountId = req.user!.id; // Lấy từ JWT
+        const addressId = parseInt(req.params.id);
+        const accountId = req.user!.id; // hoặc req.user?.account_id tùy middleware
+        
+        console.log('🗑️ DELETE ADDRESS REQUEST:', { addressId, accountId });
+
+        // Validate addressId
+        if (isNaN(addressId) || addressId <= 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'ID địa chỉ không hợp lệ.' 
+            });
+        }
+
+        // Validate accountId
+        if (!accountId) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Không tìm thấy thông tin user.' 
+            });
+        }
+
         const affected = await AddressModel.deleteAddress(addressId, accountId);
         
+        console.log('🗑️ DELETE RESULT:', { affected });
+        
         if (affected === 0) {
-             return res.status(404).json({ success: false, message: 'Không tìm thấy địa chỉ.' });
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Không tìm thấy địa chỉ hoặc không có quyền xóa.' 
+            });
         }
-        res.status(200).json({ success: true, message: 'Đã xóa địa chỉ.' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Lỗi server.' });
+        
+        res.status(200).json({ 
+            success: true, 
+            message: 'Đã xóa địa chỉ thành công.' 
+        });
+    } catch (error: any) {
+        console.error('❌ DELETE ADDRESS ERROR:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi server khi xóa địa chỉ.',
+            error: error.message // Để debug
+        });
     }
 };
 

@@ -4,11 +4,12 @@ import { protect, optionalAuth } from '../middlewares/authMiddleware';
 
 const router = express.Router();
 
-// Lấy danh sách & chi tiết (Bắt buộc đăng nhập)
-router.get('/', protect, OrderController.getMyOrders);
-router.get('/:id', protect, OrderController.getOrderDetail);
+// Sử dụng 'as any' cho middleware nếu TypeScript vẫn báo lỗi overload
+// Điều này đảm bảo code chạy được mà không bị chặn bởi lỗi type
+router.get('/', protect as any, OrderController.getMyOrders);
+router.get('/:id', protect as any, OrderController.getOrderDetail);
 
-// Tạo đơn hàng (Đăng nhập hoặc Không đăng nhập đều được)
-router.post('/', optionalAuth, OrderController.createOrder);
+// Tạo đơn hàng
+router.post('/', optionalAuth as any, OrderController.createOrder);
 
-export default router
+export default router;

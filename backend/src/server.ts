@@ -13,6 +13,9 @@ import productRoutes from './routes/ProductRoutes';
 import categoryRoutes from './routes/CategoryRoutes'; // ⬅️ THÊM
 import brandRoutes from './routes/BrandRoutes';       // ⬅️ THÊM
 import userRoutes from './routes/UserRoutes';         // ⬅️ THÊM (Cho Profile/Address)
+import orderRoutes from './routes/OrderRoutes';   // ⬅️ THÊM (Cho Orders)
+import paymentRoutes from './routes/PaymentRoutes';
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -26,14 +29,26 @@ app.use(passport.initialize()); // Khởi tạo Passport cho Google Auth
 app.get('/', (req, res) => {
     res.send('TechStore API Service is running!');
 });
+app.use('/api/auth', authRoutes);
+console.log('✅ /api/auth registered');
 
-// Register routes (Tích hợp tất cả các module vào /api)
-app.use('/api/auth', authRoutes);       // Đăng ký/Đăng nhập
-app.use('/api/users', userRoutes);      // Profile và Địa chỉ (Yêu cầu Token)
-app.use('/api/products', productRoutes); // Sản phẩm (Public & Admin)
-app.use('/api/categories', categoryRoutes); // ⬅️ Tích hợp Category CRUD
-app.use('/api/brands', brandRoutes);       // ⬅️ Tích hợp Brand CRUD
+app.use('/api/users', userRoutes);
+console.log('✅ /api/users registered');
 
+app.use('/api/products', productRoutes);
+console.log('✅ /api/products registered');
+
+app.use('/api/categories', categoryRoutes);
+console.log('✅ /api/categories registered');
+
+app.use('/api/brands', brandRoutes);
+console.log('✅ /api/brands registered');
+
+app.use('/api/orders', orderRoutes);
+console.log('✅ /api/orders registered');
+
+app.use('/api/payment', paymentRoutes);
+console.log('✅ /api/payment registered');
 
 // KHÔNG CẦN DÒNG app.use('/api', authRoutes);
 

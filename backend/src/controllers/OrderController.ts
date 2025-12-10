@@ -6,8 +6,14 @@ import { ResultSetHeader } from 'mysql2';
 // API: Lấy danh sách đơn hàng
 export const getMyOrders: RequestHandler = async (req, res) => {
     try {
-        const accountId = req.user!.id;
-        const orders = await OrderModel.getOrdersByAccountId(accountId);
+        const user = req.user as any; 
+        
+        if (!user || !user.id) {
+             res.status(401).json({ message: 'Unauthorized' });
+             return;
+        }
+
+        const orders = await OrderModel.getOrdersByAccountId(user.id);
         res.status(200).json({ success: true, data: orders });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Lỗi server' });
@@ -17,9 +23,14 @@ export const getMyOrders: RequestHandler = async (req, res) => {
 // API: Lấy chi tiết đơn hàng
 export const getOrderDetail: RequestHandler = async (req, res) => {
     try {
-        const accountId = req.user!.id;
+        const user = req.user as any;
+        if (!user || !user.id) {
+             res.status(401).json({ message: 'Unauthorized' });
+             return;
+        }
+
         const orderId = parseInt(req.params.id);
-        const order = await OrderModel.getOrderDetail(orderId, accountId);
+        const order = await OrderModel.getOrderDetail(orderId, user.id);
 
         if (!order) {
             res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
@@ -32,78 +43,106 @@ export const getOrderDetail: RequestHandler = async (req, res) => {
     }
 };
 
-// 🆕 API: Tạo đơn hàng (Checkout)
+// API: Tạo đơn hàng (Checkout) - ✅ ĐÃ SỬA
 export const createOrder: RequestHandler = async (req, res) => {
+    console.log('🚀 CREATE ORDER CALLED');
+    console.log('📦 Request Body:', req.body);
+    console.log('👤 User:', req.user);
+    
     const connection = await db.getConnection();
     try {
-        await connection.beginTransaction(); // Bắt đầu giao dịch
+        await connection.beginTransaction();
 
-        // Lấy accountId: Nếu user login thì lấy ID, nếu không thì null
-        const accountId = req.user ? req.user.id : null; 
+        const user = req.user as any;
+        const accountId = user ? user.id : null; 
         
-        const {
-  recipient_name,
-  phone_number,
-  address,
-  district,
-  city,
-  items,
-  payment_method,
-  total_amount
-} = req.body;
+        const { 
+            address_id,           // ✅ THÊM: Nhận address_id từ frontend
+            recipient_name, 
+            phone_number,
+            address, 
+            district, 
+            city,       
+            items, 
+            payment_method,     
+            total_amount          
+        } = req.body;
 
-if (!recipient_name || !phone_number || !address || !district || !city) {
-    throw new Error("Thiếu thông tin giao hàng");
-}
-
-if (!items || items.length === 0) {
-    throw new Error("Giỏ hàng trống");
-}
-
-
-        // Log để debug (Xem terminal backend nhận được gì)
-        console.log("Creating Order for:", { recipient_name, total_amount, itemsCount: items?.length });
-
-        // 1. Lưu địa chỉ (address_id)
-        // Câu lệnh này khớp với bảng addresses hiện tại của bạn
-        const [addrResult] = await connection.execute<ResultSetHeader>(`
-            INSERT INTO addresses (account_id, recipient_name, phone_number, address, district, city, country, is_default)
-            VALUES (?, ?, ?, ?, ?, ?, 'Vietnam', 0)
-        `, [accountId, recipient_name, phone_number, address, district, city]);
-        
-        const addressId = addrResult.insertId;
-
-        // 2. Lưu đơn hàng (order_id)
-        const [orderResult] = await connection.execute<ResultSetHeader>(`
-            INSERT INTO orders (account_id, guest_name, guest_phone, address_id, total_amount, final_amount, payment_method, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'Chờ xác nhận')
-        `, [accountId, recipient_name, phone_number, addressId, total_amount, total_amount, payment_method]);
-
-        const orderId = orderResult.insertId;
-
-        // 3. Lưu chi tiết sản phẩm
-        if (items && items.length > 0) {
-            for (const item of items) {
-                // Kiểm tra dữ liệu từng item
-                if (!item.product_id || !item.price) {
-                    throw new Error(`Dữ liệu sản phẩm không hợp lệ: ID=${item.product_id}`);
-                }
-
-                await connection.execute(`
-                    INSERT INTO order_items (order_id, product_id, quantity, price_at_order)
-                    VALUES (?, ?, ?, ?)
-                `, [orderId, item.product_id, item.quantity, item.price]);
-            }
+        // Validation items
+        if (!items || items.length === 0) {
+             res.status(400).json({ success: false, message: "Giỏ hàng trống" });
+             return;
         }
 
-        await connection.commit(); // Xác nhận lưu vào DB
-        console.log("Order Created Successfully! ID:", orderId);
+        let finalAddressId = address_id;
+
+        // ✅ LOGIC MỚI: Chỉ tạo địa chỉ mới khi KHÔNG CÓ address_id
+        if (!address_id) {
+            // Người dùng nhập địa chỉ mới
+            if (!recipient_name || !phone_number || !address || !district || !city) {
+                res.status(400).json({ success: false, message: "Thiếu thông tin giao hàng" });
+                return;
+            }
+
+            console.log("📍 Creating NEW address...");
+            
+            const [addrResult] = await connection.execute<ResultSetHeader>(`
+                INSERT INTO addresses (account_id, recipient_name, phone_number, address, district, city, country, is_default)
+                VALUES (?, ?, ?, ?, ?, ?, 'Vietnam', 0)
+            `, [accountId, recipient_name, phone_number, address, district, city]);
+            
+            finalAddressId = addrResult.insertId;
+            console.log("✅ New address created:", finalAddressId);
+        } else {
+            // ✅ Dùng địa chỉ có sẵn
+            console.log("✅ Using EXISTING address:", address_id);
+        }
+
+        // 2. Lưu đơn hàng
+        const isPaidValue = false; // Mặc định FALSE, chờ thanh toán
+        const [orderResult] = await connection.execute<ResultSetHeader>(`
+            INSERT INTO orders (account_id, guest_name, guest_phone, address_id, total_amount, final_amount, payment_method, status, isPaid)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'Chờ xác nhận', ?)
+        `, [accountId, recipient_name || null, phone_number || null, finalAddressId, total_amount, total_amount, payment_method, isPaidValue]);
+
+        const orderId = orderResult.insertId;
+        console.log("✅ Order created:", orderId);
+
+        // 3. Lưu chi tiết sản phẩm
+        for (const item of items) {
+            if (!item.product_id || !item.price) {
+                throw new Error(`Dữ liệu sản phẩm lỗi: ID=${item.product_id}`);
+            }
+            await connection.execute(`
+                INSERT INTO order_items (order_id, product_id, quantity, price_at_order)
+                VALUES (?, ?, ?, ?)
+            `, [orderId, item.product_id, item.quantity, item.price]);
+        }
+
+        console.log("✅ Order items created");
+
+        await connection.commit();
+        console.log("✅ Transaction committed");
         
-        res.status(201).json({ success: true, message: 'Đặt hàng thành công', orderId });
+        // Trả về response
+        if (payment_method === 'transfer') {
+            res.status(201).json({ 
+                success: true, 
+                message: 'Đơn hàng đã tạo, chuyển sang thanh toán', 
+                orderId,
+                requiresPayment: true 
+            });
+        } else {
+            res.status(201).json({ 
+                success: true, 
+                message: 'Đặt hàng thành công', 
+                orderId 
+            });
+        }
 
     } catch (error) {
-        await connection.rollback(); // Hoàn tác nếu lỗi
-        console.error("❌ LỖI TẠO ĐƠN HÀNG:", error); // Quan trọng: Xem lỗi này ở Terminal Backend
+        await connection.rollback();
+        console.error("❌ Lỗi tạo đơn hàng:", error);
         res.status(500).json({ success: false, message: 'Lỗi khi tạo đơn hàng' });
     } finally {
         connection.release();

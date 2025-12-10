@@ -12,8 +12,7 @@ CREATE TABLE accounts (
 );
 
 ALTER TABLE accounts
-    ADD COLUMN  date_of_birth DATE NULL,
-    ADD COLUMN  avatar_url VARCHAR(512) NULL;
+    ADD COLUMN  date_of_birth DATE NULL;
 
 CREATE TABLE addresses (
     address_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
@@ -114,6 +113,8 @@ CREATE TABLE orders (
     FOREIGN KEY (address_id) REFERENCES addresses(address_id) 
 );
 
+ALTER TABLE orders 
+ADD COLUMN transaction_id VARCHAR(100) NULL COMMENT 'MoMo transaction ID';
 
 
 CREATE TABLE payment_result (

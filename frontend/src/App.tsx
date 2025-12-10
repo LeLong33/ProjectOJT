@@ -12,7 +12,7 @@ import ProductList from "./pages/ProductList";
 import { CheckoutPage } from "./pages/orders/CheckoutPage";
 import { UserProfilePage } from "./pages/user/UserProfilePage";
 import OrderConfirmationPage from './pages/orders/OrderConfirmationPage';
-
+import { PaymentResultPage } from './pages/orders/PaymentResultPage'
 
 // ⬅️ CẦN THIẾT: Import AuthProvider
 import { AuthProvider } from "./context/AuthContext";
@@ -35,6 +35,7 @@ function App() {
           <Route path="/auth/success" element={<AuthSuccess />} /> 
           <Route path="/checkout" element={<CheckoutPage cartCount={cartCount} />} /> 
           <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+          <Route path="/payment-result" element={<PaymentResultPage />} />
           {/* ⬅️ ROUTE ADMIN DASHBOARD */}
             <Route 
                 path="/admin" 
