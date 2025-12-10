@@ -47,7 +47,8 @@ interface Product {
   category_name?: string;
   description?: string;
   short_description?: string;
-  image?: string;
+  image?: string;      // Backend trả về image
+  image_url?: string;  // Hoặc image_url
   is_active?: boolean;
 }
 
@@ -140,7 +141,13 @@ export function ProductCRUD() {
     }
 
     try {
-      const res = await api.post('/products', formData);
+      // MAP: image_url -> image trước khi gửi đi
+      const payload = {
+        ...formData,
+        image: formData.image_url 
+      };
+
+      const res = await api.post('/products', payload);
       setMessage(res.data?.message ?? '✅ Tạo sản phẩm thành công');
       setIsAddOpen(false);
       resetForm();
@@ -162,7 +169,8 @@ export function ProductCRUD() {
       category_id: product.category_id,
       description: product.description ?? '',
       short_description: product.short_description ?? '',
-      image_url: product.image ?? '',
+      // Quan trọng: Kiểm tra cả image VÀ image_url để load vào form sửa
+      image_url: product.image || product.image_url || '', 
     });
     setIsEditOpen(true);
   };
@@ -176,7 +184,13 @@ export function ProductCRUD() {
     }
 
     try {
-      const res = await api.put(`/products/${editingProduct.product_id}`, formData);
+      // MAP: image_url -> image trước khi cập nhật
+      const payload = {
+        ...formData,
+        image: formData.image_url
+      };
+
+      const res = await api.put(`/products/${editingProduct.product_id}`, payload);
       setMessage(res.data?.message ?? '✅ Cập nhật thành công');
       setIsEditOpen(false);
       setEditingProduct(null);
@@ -253,53 +267,67 @@ export function ProductCRUD() {
                   </td>
                 </tr>
               ) : (
-                products.map((p, idx) => (
-                  <tr key={p.product_id} className="border-b border-gray-800 last:border-0 hover:bg-[#0a0a0a]">
-                    <td className="py-3 px-4">{idx + 1}</td>
-                    <td className="py-3 px-4">
-                      {p.image ? (
-                        <img src={p.image} alt={p.name} className="w-16 h-16 object-cover rounded" />
-                      ) : (
-                        <div className="w-16 h-16 bg-gray-800 rounded flex items-center justify-center text-gray-600 text-xs">
-                          No img
+                products.map((p, idx) => {
+                  // CẬP NHẬT MỚI: Ưu tiên lấy image, nếu null thì lấy image_url
+                  const displayImage = p.image || p.image_url;
+
+                  return (
+                    <tr key={p.product_id} className="border-b border-gray-800 last:border-0 hover:bg-[#0a0a0a]">
+                      <td className="py-3 px-4">{idx + 1}</td>
+                      <td className="py-3 px-4">
+                        {displayImage ? (
+                          <img 
+                            src={displayImage} 
+                            alt={p.name} 
+                            className="w-16 h-16 object-cover rounded" 
+                            onError={(e) => {
+                                // Ẩn ảnh nếu link bị lỗi
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.parentElement?.classList.add('no-img-fallback');
+                            }}
+                          />
+                        ) : (
+                          <div className="w-16 h-16 bg-gray-800 rounded flex items-center justify-center text-gray-600 text-xs">
+                            No img
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-sm text-gray-400">{p.code}</td>
+                      <td className="py-3 px-4">{p.name}</td>
+                      <td className="py-3 px-4 text-gray-400">
+                        {p.category_name ?? CATEGORIES.find(c => c.id === p.category_id)?.name ?? '-'}
+                      </td>
+                      <td className="py-3 px-4 text-gray-400">
+                        {p.brand_name ?? BRANDS.find(b => b.id === p.brand_id)?.name ?? '-'}
+                      </td>
+                      <td className="py-3 px-4 text-[#007AFF]">{formatPrice(p.price)}</td>
+                      <td className="py-3 px-4">{p.quantity}</td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-1 rounded text-xs ${getStatusColor(p.quantity)}`}>
+                          {getStatusText(p.quantity)}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleEdit(p)}
+                            className="p-2 hover:bg-[#0a0a0a] rounded transition-colors"
+                            title="Chỉnh sửa"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(p.product_id)}
+                            className="p-2 hover:bg-[#0a0a0a] rounded transition-colors text-red-400"
+                            title="Xóa"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 font-mono text-sm text-gray-400">{p.code}</td>
-                    <td className="py-3 px-4">{p.name}</td>
-                    <td className="py-3 px-4 text-gray-400">
-                      {p.category_name ?? CATEGORIES.find(c => c.id === p.category_id)?.name ?? '-'}
-                    </td>
-                    <td className="py-3 px-4 text-gray-400">
-                      {p.brand_name ?? BRANDS.find(b => b.id === p.brand_id)?.name ?? '-'}
-                    </td>
-                    <td className="py-3 px-4 text-[#007AFF]">{formatPrice(p.price)}</td>
-                    <td className="py-3 px-4">{p.quantity}</td>
-                    <td className="py-3 px-4">
-                      <span className={`px-2 py-1 rounded text-xs ${getStatusColor(p.quantity)}`}>
-                        {getStatusText(p.quantity)}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleEdit(p)}
-                          className="p-2 hover:bg-[#0a0a0a] rounded transition-colors"
-                          title="Chỉnh sửa"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(p.product_id)}
-                          className="p-2 hover:bg-[#0a0a0a] rounded transition-colors text-red-400"
-                          title="Xóa"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -398,7 +426,18 @@ export function ProductCRUD() {
                   className="w-full p-2 bg-black border border-gray-700 rounded focus:border-[#007AFF] outline-none"
                   value={formData.image_url}
                   onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  placeholder="https://example.com/image.jpg"
                 />
+                {formData.image_url && (
+                  <div className="mt-2">
+                    <img 
+                      src={formData.image_url} 
+                      alt="Preview" 
+                      className="w-20 h-20 object-cover rounded border border-gray-700"
+                      onError={(e) => (e.currentTarget.style.display = 'none')} 
+                    />
+                  </div>
+                )}
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-3">
@@ -510,6 +549,16 @@ export function ProductCRUD() {
                   value={formData.image_url}
                   onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                 />
+                {formData.image_url && (
+                  <div className="mt-2">
+                    <img 
+                      src={formData.image_url} 
+                      alt="Preview" 
+                      className="w-20 h-20 object-cover rounded border border-gray-700"
+                      onError={(e) => (e.currentTarget.style.display = 'none')} 
+                    />
+                  </div>
+                )}
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-3">

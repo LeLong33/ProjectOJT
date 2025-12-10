@@ -9,7 +9,7 @@ import { useCart } from '@/context/CartContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// Định nghĩa kiểu dữ liệu cho chi tiết sản phẩm
+// Cập nhật interface để chấp nhận cả mảng images và field image/image_url lẻ
 interface ProductDetailData {
     product_id: number;
     name: string;
@@ -23,15 +23,16 @@ interface ProductDetailData {
     RAM?: string;
     Storage?: string;
     Display?: string;
-    images: { url: string; is_main: boolean }[];
-    // brand: string; // Giả định brand được đính kèm vào data
+    
+    // Sửa phần này: Chấp nhận nhiều trường hợp trả về từ API
+    image?: string;       // Trường hợp 1: API trả về field 'image'
+    image_url?: string;   // Trường hợp 2: API trả về field 'image_url'
+    images?: { url: string; is_main: boolean }[]; // Trường hợp 3: API trả về mảng
 }
 
 function formatPrice(price?: number) {
     if (typeof price !== 'number') return '';
-    // Format with dot thousand separators and append ' đ' as in Vietnamese retail sites
     try {
-        // Use toLocaleString to get grouping, remove decimals and append space + 'đ'
         const s = Math.round(price).toLocaleString('vi-VN');
         return `${s} đ`;
     } catch (e) {
@@ -39,7 +40,19 @@ function formatPrice(price?: number) {
     }
 }
 
-// Nỗ lực lấy giá sản phẩm từ nhiều trường khác nhau và ép kiểu số nếu cần
+// Hàm lấy ảnh an toàn (Safety check cho ảnh)
+function getProductImage(p: any): string {
+    if (!p) return '';
+    // Ưu tiên 1: Lấy từ mảng images nếu có
+    if (Array.isArray(p.images) && p.images.length > 0) {
+        const main = p.images.find((img: any) => img.is_main);
+        if (main?.url) return main.url;
+        if (p.images[0]?.url) return p.images[0].url;
+    }
+    // Ưu tiên 2: Lấy từ root field
+    return p.image || p.image_url || '';
+}
+
 function resolvePrice(product: any): number | undefined {
     if (!product) return undefined;
     const candidates = ['price', 'unit_price', 'sale_price', 'original_price', 'gia', 'price_vnd'];
@@ -56,10 +69,8 @@ function resolvePrice(product: any): number | undefined {
     return undefined;
 }
 
-// Normalize price if it's suspiciously large (some APIs return value multiplied by 100)
 function normalizePriceValue(p?: number): number | undefined {
     if (p == null) return undefined;
-    // If price is >= 1,000,000,000 (1 billion) it's likely 100x too large for typical products like laptops
     if (p >= 1_000_000_000) {
         const down = Math.round(p / 100);
         return down;
@@ -68,7 +79,6 @@ function normalizePriceValue(p?: number): number | undefined {
 }
 
 const formatPriceShort = (price: number) => formatPrice(price);
-
 
 export default function ProductDetail() {
     const { id } = useParams<{ id: string }>();
@@ -82,7 +92,7 @@ export default function ProductDetail() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // --- LOGIC FETCH BACKEND (Giữ nguyên) ---
+    // --- LOGIC FETCH BACKEND ---
     useEffect(() => {
         if (!id) return;
         setLoading(true);
@@ -91,9 +101,11 @@ export default function ProductDetail() {
           .then((res) => {
             const data = res.data?.data || res.data;
             setProduct(data);
-            // Lấy ảnh chính (hoặc ảnh đầu tiên) để hiển thị lớn
-            const primaryImage = data.images?.find((img: any) => img.is_main)?.url || data.images?.[0]?.url;
-            setMainImage(primaryImage);
+            
+            // FIX: Logic lấy ảnh chính thông minh hơn
+            // Kiểm tra: data.image -> data.image_url -> data.images array
+            const imgUrl = getProductImage(data);
+            setMainImage(imgUrl);
 
             if (data.price) {
                 fetchRelatedProducts(data.price);
@@ -105,7 +117,6 @@ export default function ProductDetail() {
           .finally(() => setLoading(false));
     }, [id]);
     
-    // Logic Sản phẩm liên quan (Gợi ý theo Tầm giá - Giữ nguyên)
     const fetchRelatedProducts = async (basePrice: number) => {
         const minPrice = Math.max(0, basePrice - 5000000);
         const maxPrice = basePrice + 5000000;
@@ -123,7 +134,6 @@ export default function ProductDetail() {
         }
     };
     
-    // Xử lý Thêm vào giỏ hàng
     const handleAddToCart = () => {
         if (!product) return;
         addToCart({
@@ -139,39 +149,50 @@ export default function ProductDetail() {
     if (error) return <div className="min-h-[60vh] flex items-center justify-center text-red-600">{error}</div>;
     if (!product) return <div className="min-h-[60vh] flex items-center justify-center text-gray-400">Không tìm thấy sản phẩm</div>;
 
-    const imageURLs = product.images ? product.images.map(img => img.url) : [];
+    // FIX: Tạo danh sách ảnh thumbnail
+    // Nếu có mảng images thì dùng, nếu không thì dùng ảnh chính tạo thành mảng 1 phần tử
+    const imageURLs = (product.images && product.images.length > 0) 
+        ? product.images.map(img => img.url) 
+        : (mainImage ? [mainImage] : []);
 
     return (
-        <div className="min-h-screen bg-[#0a0a0a] text-white font-inter"> {/* ⬅️ DARK MODE */}
+        <div className="min-h-screen bg-[#0a0a0a] text-white font-inter">
             <Navbar cartCount={0} />
 
             <main className="pt-24">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-                    {/* Breadcrumbs */}
                     <nav className="text-sm text-gray-500 mb-6">
                         <Link to="/" className="hover:underline">Trang chủ</Link>
                         <span className="mx-2">/</span>
                         <span className="text-gray-300">{product.name}</span>
                     </nav>
 
-                    {/* === PHẦN 1: ẢNH VÀ MUA HÀNG (TOP SECTION) === */}
                     <div className="grid grid-cols-1 lg:grid-cols-7 gap-8 bg-[#1a1a1a] rounded-xl p-6 shadow-xl border border-gray-800">
                         
-                        {/* ⬅️ CỘT TRÁI (3/7): GALLERY ẢNH & THUMBNAILS */}
+                        {/* ⬅️ CỘT TRÁI (3/7): GALLERY ẢNH */}
                         <div className="lg:col-span-3">
                             <div className="bg-[#101010] rounded-xl p-4 shadow-sm border border-gray-700">
-                                <img src={mainImage || 'https://via.placeholder.com/800x800?text=Product+Image'} alt={product.name} className="w-full h-[380px] object-contain rounded" />
+                                <img 
+                                    src={mainImage || 'https://via.placeholder.com/800x800?text=No+Image'} 
+                                    alt={product.name} 
+                                    className="w-full h-[380px] object-contain rounded"
+                                    onError={(e) => {
+                                        // Fallback nếu ảnh lỗi
+                                        e.currentTarget.src = 'https://via.placeholder.com/800x800?text=Error';
+                                    }}
+                                />
                                 {/* Gallery Thumbnails */}
-                                <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
-                                    {imageURLs.filter(Boolean).slice(0, 6).map((u: string, i: number) => (
-                                        <button key={i} onClick={() => setMainImage(u)} className={`w-16 h-16 flex-shrink-0 rounded overflow-hidden ${mainImage === u ? 'ring-2 ring-red-600' : 'border border-gray-700'}`}>
-                                            <img src={u || 'https://via.placeholder.com/80'} alt={`thumb-${i}`} className="w-full h-full object-cover" />
-                                        </button>
-                                    ))}
-                                </div>
+                                {imageURLs.length > 1 && (
+                                    <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
+                                        {imageURLs.filter(Boolean).slice(0, 6).map((u: string, i: number) => (
+                                            <button key={i} onClick={() => setMainImage(u)} className={`w-16 h-16 flex-shrink-0 rounded overflow-hidden ${mainImage === u ? 'ring-2 ring-red-600' : 'border border-gray-700'}`}>
+                                                <img src={u} alt={`thumb-${i}`} className="w-full h-full object-cover" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             
-                            {/* Chính sách sản phẩm */}
                             <div className="mt-6 bg-[#1a1a1a] rounded-xl p-4 shadow-sm border border-gray-700">
                                 <h3 className="text-lg font-semibold mb-3 text-white">Chính sách sản phẩm</h3>
                                 <div className="space-y-2 text-sm text-gray-400">
@@ -182,28 +203,22 @@ export default function ProductDetail() {
                             </div>
                         </div>
 
-                        {/* ➡️ CỘT PHẢI (4/7): THÔNG TIN VÀ MUA HÀNG */}
+                        {/* ➡️ CỘT PHẢI (4/7): THÔNG TIN */}
                         <aside className="lg:col-span-4">
                             <div className="sticky top-28 space-y-5">
-                                
-                                {/* 1. Tên, Rating, Giá */}
                                 <div className="border-b border-gray-700 pb-3">
                                     <h1 className="text-3xl font-bold mt-1 mb-2 text-white">{product.name}</h1>
-                                    
-                                    {/* Rating */}
                                     <div className="flex items-center gap-3 text-sm text-gray-500 mt-2">
                                         <div className="flex items-center gap-1">
                                             {[...Array(5)].map((_, i) => (
-                                                <Star key={i} className={`${i < Math.floor(product.rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-700' } w-4 h-4`} />
+                                                <Star key={i} className={`${i < Math.floor(product.rating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-700' } w-4 h-4`} />
                                             ))}
                                         </div>
-                                        <span className="text-gray-400">{product.rating.toFixed(1)} ({product.numReviews} Đánh giá)</span>
+                                        <span className="text-gray-400">{product.rating ? product.rating.toFixed(1) : 0} ({product.numReviews || 0} Đánh giá)</span>
                                     </div>
                                 </div>
 
-                                {/* Giá & Khuyến mãi */}
                                 <div className="bg-red-800/20 border border-red-700/50 rounded-xl p-5 shadow-sm">
-                                    {/* Giá tiền */}
                                     <div className="flex items-end justify-between mb-4">
                                         {
                                             (() => {
@@ -212,13 +227,11 @@ export default function ProductDetail() {
                                                 return p ? <span className="text-4xl font-extrabold text-red-400">{formatPrice(p)}</span> : <span className="text-lg text-gray-300">Liên hệ để biết giá</span>;
                                             })()
                                         }
-                                        {/* Giá gốc (nếu có) */}
                                         {('original_price' in product) && (product as any).original_price && (
                                             <span className="text-lg text-gray-500 line-through">{formatPrice((product as any).original_price)}</span>
                                         )}
                                     </div>
                                     
-                                    {/* Số lượng */}
                                     <div className="mt-4">
                                         <div className="text-sm text-gray-400 mb-2">Số lượng:</div>
                                         <div className="inline-flex items-center gap-2 border border-gray-600 rounded-lg">
@@ -228,7 +241,6 @@ export default function ProductDetail() {
                                         </div>
                                     </div>
 
-                                    {/* Buttons Mua hàng */}
                                     <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
                                         <Button onClick={handleAddToCart} className="bg-red-600 hover:bg-red-700 py-3 text-lg font-semibold w-full">
                                             <ShoppingCart className="w-5 h-5 mr-2" /> Thêm vào giỏ
@@ -237,22 +249,19 @@ export default function ProductDetail() {
                                     </div>
                                 </div>
                                 
-                                {/* Mô tả ngắn */}
                                 {product.short_description && <p className="text-gray-400 mt-4 text-sm">{product.short_description}</p>}
                             </div>
                         </aside>
                     </div>
 
-                    {/* === PHẦN CHI TIẾT SẢN PHẨM (BOTTOM FULL WIDTH) === */}
+                    {/* === PHẦN CHI TIẾT SẢN PHẨM === */}
                     <div className="mt-12 bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 shadow-md">
-                        {/* Tabs Navigation */}
                         <div className="flex items-center gap-6 border-b border-gray-700 pb-3 mb-6">
                             <button onClick={() => setActiveTab('description')} className={`pb-2 text-lg font-medium ${activeTab === 'description' ? 'text-red-500 border-b-2 border-red-500' : 'text-gray-400'}`}>Mô tả sản phẩm</button>
                             <button onClick={() => setActiveTab('specs')} className={`pb-2 text-lg font-medium ${activeTab === 'specs' ? 'text-red-500 border-b-2 border-red-500' : 'text-gray-400'}`}>Thông số kỹ thuật</button>
                             <button onClick={() => setActiveTab('reviews')} className={`pb-2 text-lg font-medium ${activeTab === 'reviews' ? 'text-red-500 border-b-2 border-red-500' : 'text-gray-400'}`}>Đánh giá ({product.numReviews})</button>
                         </div>
                         
-                        {/* Tabs Content */}
                         <div className="min-h-[300px]">
                             {activeTab === 'description' && (
                                 <div className="prose prose-invert max-w-none text-sm text-gray-300">
@@ -279,11 +288,11 @@ export default function ProductDetail() {
                                     <h4 className="text-white font-medium mb-4 text-xl">Đánh giá và Bình luận</h4>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 border-b border-gray-700 pb-6">
                                         <div className="md:col-span-1">
-                                            <div className="text-6xl font-extrabold text-red-500 mb-2">{product.rating.toFixed(1)} / 5</div>
+                                            <div className="text-6xl font-extrabold text-red-500 mb-2">{product.rating ? product.rating.toFixed(1) : 0} / 5</div>
                                             <div className="flex items-center gap-1 text-yellow-400">
                                                 {[...Array(5)].map((_, i) => <Star key={i} className="w-5 h-5 fill-yellow-400" />)}
                                             </div>
-                                            <p className="text-sm text-gray-500 mt-2">{product.numReviews} lượt đánh giá</p>
+                                            <p className="text-sm text-gray-500 mt-2">{product.numReviews || 0} lượt đánh giá</p>
                                         </div>
                                         <div className="md:col-span-2 space-y-4">
                                             <p className='text-gray-400'>Bạn đã mua sản phẩm này? Hãy chia sẻ đánh giá của mình!</p>
@@ -295,18 +304,22 @@ export default function ProductDetail() {
                         </div>
                     </div>
                     
-                    {/* === SẢN PHẨM LIÊN QUAN (GỢI Ý) === */}
+                    {/* === SẢN PHẨM LIÊN QUAN === */}
                     <div className="mt-12 pt-12 border-t border-gray-800">
                         <h2 className="text-2xl font-bold mb-6 text-white">Sản phẩm có thể bạn thích</h2>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
                             {relatedProducts.length > 0 ? (
-                                relatedProducts.map((p) => (
-                                    <Link to={`/product/${p.product_id}`} key={p.product_id} className="block bg-[#1a1a1a] border border-gray-800 rounded-lg p-4 hover:border-red-500 transition-all">
-                                        <img src={p.images[0]?.url || 'https://via.placeholder.com/300?text=Related'} alt={p.name} className="h-28 w-full object-contain mb-3" />
-                                        <h4 className="text-base font-medium line-clamp-2 text-white">{p.name}</h4>
-                                        <p className="text-red-500 font-semibold mt-1">{formatPriceShort(p.price)}</p>
-                                    </Link>
-                                ))
+                                relatedProducts.map((p) => {
+                                    // FIX: Lấy ảnh cho sản phẩm liên quan
+                                    const relatedImg = getProductImage(p);
+                                    return (
+                                        <Link to={`/product/${p.product_id}`} key={p.product_id} className="block bg-[#1a1a1a] border border-gray-800 rounded-lg p-4 hover:border-red-500 transition-all">
+                                            <img src={relatedImg || 'https://via.placeholder.com/300?text=No+Image'} alt={p.name} className="h-28 w-full object-contain mb-3" />
+                                            <h4 className="text-base font-medium line-clamp-2 text-white">{p.name}</h4>
+                                            <p className="text-red-500 font-semibold mt-1">{formatPriceShort(p.price)}</p>
+                                        </Link>
+                                    );
+                                })
                             ) : (
                                 <p className="text-gray-500 col-span-4">Không tìm thấy sản phẩm tương tự trong tầm giá (+/- 5 triệu).</p>
                             )}
