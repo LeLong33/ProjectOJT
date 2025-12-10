@@ -12,4 +12,8 @@ router.get('/:id', protect as any, OrderController.getOrderDetail);
 // Tạo đơn hàng
 router.post('/', optionalAuth as any, OrderController.createOrder);
 
+router.get('/admin/all', protect as any, OrderController.getAllOrders);
+router.put('/admin/:orderId/status', protect as any, OrderController.updateOrderStatus);
+router.delete('/admin/:orderId', protect as any, OrderController.deleteOrder);
+
 export default router;

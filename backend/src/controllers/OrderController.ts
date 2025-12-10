@@ -148,3 +148,137 @@ export const createOrder: RequestHandler = async (req, res) => {
         connection.release();
     }
 };
+
+export const getAllOrders: RequestHandler = async (req, res) => {
+    try {
+        const [orders]: any = await db.execute(`
+            SELECT 
+                o.order_id,
+                o.account_id,
+                o.status,
+                o.total_amount,
+                o.final_amount,
+                o.payment_method,
+                o.isPaid,
+                o.createdAt,
+                o.guest_name,
+                o.guest_phone,
+                a.recipient_name,
+                a.phone_number,
+                a.address,
+                a.city
+            FROM orders o
+            LEFT JOIN addresses a ON o.address_id = a.address_id
+            ORDER BY o.createdAt DESC
+        `);
+
+        res.json({
+            success: true,
+            data: orders
+        });
+    } catch (error) {
+        console.error('❌ Get all orders error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi lấy danh sách đơn hàng'
+        });
+    }
+};
+
+/**
+ * [ADMIN] Cập nhật trạng thái đơn hàng
+ */
+export const updateOrderStatus: RequestHandler = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const { status } = req.body;
+
+        // Validate status
+        const validStatuses = [
+            'Chờ xác nhận',
+            'Đã xác nhận', 
+            'Đang giao',
+            'Đã giao',
+            'Đã hủy',
+            'Đã thanh toán',
+            'Chưa thanh toán'
+        ];
+
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Trạng thái không hợp lệ'
+            });
+        }
+
+        const [result] = await db.execute<ResultSetHeader>(
+            `UPDATE orders SET status = ? WHERE order_id = ?`,
+            [status, orderId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy đơn hàng'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: `Đã cập nhật trạng thái thành "${status}"`
+        });
+    } catch (error) {
+        console.error('❌ Update order status error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi cập nhật trạng thái'
+        });
+    }
+};
+
+/**
+ * [ADMIN] Xóa đơn hàng
+ */
+export const deleteOrder: RequestHandler = async (req, res) => {
+    const connection = await db.getConnection();
+    try {
+        const { orderId } = req.params;
+
+        await connection.beginTransaction();
+
+        // Xóa order_items trước
+        await connection.execute(
+            `DELETE FROM order_items WHERE order_id = ?`,
+            [orderId]
+        );
+
+        // Xóa order
+        const [result] = await connection.execute<ResultSetHeader>(
+            `DELETE FROM orders WHERE order_id = ?`,
+            [orderId]
+        );
+
+        await connection.commit();
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy đơn hàng'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Đã xóa đơn hàng'
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('❌ Delete order error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi xóa đơn hàng'
+        });
+    } finally {
+        connection.release();
+    }
+};
