@@ -86,8 +86,7 @@ export function AdminDashboard(): JSX.Element {
               { key: 'products', icon: <Package className="w-5 h-5" />, label: 'Sản phẩm' },
               { key: 'orders', icon: <ShoppingCart className="w-5 h-5" />, label: 'Đơn hàng' },
               { key: 'customers', icon: <Users className="w-5 h-5" />, label: 'Khách hàng' },
-              { key: 'coupons', icon: <Tag className="w-5 h-5" />, label: 'Mã giảm giá' },
-              { key: 'content', icon: <FileText className="w-5 h-5" />, label: 'Nội dung' },
+              
             ].map(tab => (
               <button
                 key={tab.key}
@@ -177,26 +176,9 @@ export function AdminDashboard(): JSX.Element {
           {activeTab === 'customers' && <UserCRUD />}
 
           {/* Coupons Tab - Coming soon */}
-          {activeTab === 'coupons' && (
-            <div>
-              <h2 className="text-2xl mb-6">Quản lý mã giảm giá</h2>
-              <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-8 text-center">
-                <Tag className="w-16 h-16 mx-auto mb-4 text-gray-600" />
-                <p className="text-gray-400">Chức năng đang phát triển</p>
-              </div>
-            </div>
-          )}
+          
 
-          {/* Content Tab - Coming soon */}
-          {activeTab === 'content' && (
-            <div>
-              <h2 className="text-2xl mb-6">Quản lý nội dung</h2>
-              <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-8 text-center">
-                <FileText className="w-16 h-16 mx-auto mb-4 text-gray-600" />
-                <p className="text-gray-400">Chức năng đang phát triển</p>
-              </div>
-            </div>
-          )}
+          
         </main>
       </div>
     </div>
